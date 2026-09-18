@@ -117,10 +117,15 @@ Phiên bản hiện tại tích hợp **thuật toán phân tích thị giác m�
 - **Mật độ phủ mực (Ink Density):** Tính toán tỷ lệ mực quang học trong vùng lõi văn bản (chữ đậm ~48-55%, chữ thường ~30-40%).
 - **Góc nghiêng (Skew/Slant Angle):** Đo góc lệch nét dọc để nhận diện chữ **NGHIÊNG (Italic)**.
 - **Hút màu mực quét thực tế (Ink Color Sampling):** Không dùng màu đen thuần túy `(0, 0, 0)` của máy in điện tử mà tự động lấy mẫu quang phổ các pixel tối nhất của chữ scan cũ (thường là xám chì `RGB(74, 75, 81)`).
-- **Hòa màu giấy nền cục bộ (Paper Background Inpainting):** Thuật toán tự quét dải màu nền xung quanh ô chữ, tái tạo nền giấy tự nhiên (bao gồm cả hạt giấy, độ ố vàng nhẹ).
+- **Độ rỗ thớ giấy & Điểm rỗ vi hạt scan (Scan Roughness & Micro-Pores):** Văn bản in ra giấy rồi scan qua máy quét **không bao giờ là các khối màu phẳng lì như vector máy tính**. Script tự động mô phỏng đầy đủ:
+  + **Điểm rỗ (Micro-Pores / Pinhole Voids):** Tái tạo các vi lỗ bọt khí mực li ti và các khe lõm của thớ sợi giấy lộ sáng bên trong nét chữ.
+  + **Viền chữ gồ ghề tự nhiên (Edge Roughness & Jitter):** Khử hoàn toàn cảm giác mép viền thẳng tắp của đồ họa vi tính, thay bằng đường biên hơi gợn theo thớ giấy scan thật.
+  + **Hạt mực scan đa tầng (Multi-Scale Toner Grain):** Phân bố quang phổ hạt mực với độ sâu lõi chữ (Centerline Core Darkening - giữa nét đậm hơn, mép nét nhạt dần).
+  + **Tái tạo kết cấu giấy nền khi xóa (Paper Background Grain Inpainting):** Vùng bị xóa được điền đầy bằng màu giấy nền kết hợp với độ nhiễu hạt sensor (std ~ 1.8..3.0) của chính trang giấy scan đó, không để lại mảng chữ nhật phẳng lì.
+  + **Tùy chỉnh linh hoạt qua cờ `--roughness`:** Mặc định là `1.0` (tự nhiên nhất). Bạn có thể tăng lên `1.2..1.5` cho scan giấy xơ thô, hoặc giảm về `0.5..0.8` cho văn bản in nét mịn.
 - **Tự căn lề thông minh (Auto Alignment):** Tự động căn lề phải (`right`) cho các chuỗi số/tiền tệ và căn giữa (`center`) cho từ ngữ.
 
-> **Lợi ích:** Khi chạy lệnh `replace`, bạn **không cần gõ `--font`, `--size`, `--color`**. Script sẽ tự động làm tất cả để chữ mới khớp 100% với văn bản gốc!
+> **Lợi ích:** Khi chạy lệnh `replace`, bạn **không cần gõ `--font`, `--size`, `--color`**. Script sẽ tự động làm tất cả để chữ mới khớp 100% với văn bản gốc cả về hình dáng, màu mực lẫn độ rỗ scan!
 
 ---
 
@@ -190,16 +195,18 @@ Khi bạn chọn vùng bằng lệnh `pick`, script sẽ phân tích và in ra b
      • Font chữ chuẩn đề xuất       : timesbd.ttf
      • Các font chữ thay thế        : arialbd.ttf (Arial Bold) / calibrib.ttf (Calibri Bold)
 
-  4. MÀU SẮC VÀ QUANG PHỔ (COLOR & BACKGROUND):
+  4. MÀU SẮC VÀ ĐỘ RỖ THỚ GIẤY (COLOR & TEXTURE):
      • Màu mực quét (Ink Color)     : RGB(74, 75, 81)  (Mã Hex: #4A4B51)
      • Màu giấy nền (Paper Color)   : RGB(253, 254, 254)  (Mã Hex: #FDFEFE)
-     • Độ mờ hạt scan (Blur Radius) : 0.42..0.48 (tán sắc tự nhiên)
+     • Độ rỗ hạt mực (Roughness)    : std ~30.2 (điểm rỗ thớ giấy scan)
+     • Độ nhiễu giấy nền (Grain)    : std ~1.85 (kết cấu thớ giấy)
+     • Độ mờ tán sắc (Blur Radius)  : 0.38..0.42 (tán sắc tự nhiên)
 
   5. GỢI Ý CĂN LỀ (ALIGNMENT):
      • Khuyến nghị                  : Căn lề PHẢI (right - số liệu/tiền tệ/bảng tính)
 ----------------------------------------------------------------------------
-[+] CÂU LỆNH MẪU ĂN LIỀN (CHÍNH XÁC 100% THUỘC TÍNH):
-python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" --font timesbd.ttf --size 52 --align right --color 74 75 81
+[+] CÂU LỆNH MẪU ĂN LIỀN (CHÍNH XÁC 100% THUỘC TÍNH & ĐỘ RỖ):
+python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI"
 ============================================================================
 ```
 
@@ -209,8 +216,8 @@ python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 5
    - Nếu là chữ THƯỜNG: Script đề xuất `times.ttf` (Times New Roman Regular).
    - Nếu là chữ NGHIÊNG: Script đề xuất `timesi.ttf` (Times New Roman Italic).
 2. **Cỡ font quy đổi (Font Size):** Cỡ font chuẩn (point size) tương thích với Windows Typography Engine khi in lên độ phân giải scan gốc.
-3. **Màu mực quét (Ink Color):** Màu mực thực tế của bản scan. Dùng màu này giúp nét chữ mới tiệp màu hoàn toàn với các dòng chữ xung quanh.
-4. **Màu giấy nền (Paper Color):** Giá trị màu nền bình quân tại khu vực, đảm bảo việc xóa chữ cũ không để lại ô chữ nhật màu lạ.
+3. **Màu mực & Độ rỗ scan:** Trích xuất màu mực lõi thực tế và độ phân tán hạt mực (`std ~30`), giúp nét chữ mới có các điểm rỗ vi mô tự nhiên như bản scan.
+4. **Màu giấy & Kết cấu giấy:** Tái tạo thớ giấy nền cục bộ khi xóa, không để lại mảng phẳng trơn láng.
 5. **Gợi ý căn lề (Alignment):** Tự động phát hiện loại nội dung để gợi ý lề phải (cho số tiền trong ô) hoặc căn giữa/trái.
 
 ---
@@ -222,14 +229,15 @@ python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 5
 python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DUNG> [CÁC_CỜ_TÙY_CHỌN]
 ```
 - **Chế độ Tự Động 100% (Khuyên dùng - Ngắn gọn nhất):**
-  Không cần truyền `--font`, `--size`, `--align`, `--color`. Script sẽ tự động trích xuất các thuộc tính từ chữ cũ trước khi xóa:
+  Không cần truyền `--font`, `--size`, `--align`, `--color`. Script sẽ tự động trích xuất các thuộc tính và độ rỗ từ chữ cũ trước khi xóa:
   ```bash
   python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000"
   ```
-- **Chế độ Chỉnh tay Chuyên sâu (Khi muốn ép kiểu chữ theo ý muốn):**
+- **Chế độ Chỉnh tay Chuyên sâu (Khi muốn ép kiểu chữ và độ rỗ theo ý muốn):**
   - `--font`: Tên file font (`timesbd.ttf`, `times.ttf`, `timesi.ttf`, `arial.ttf`, `GOTHIC.TTF`...).
   - `--size`: Cỡ font số nguyên (ví dụ: `52`, `54`).
   - `--align`: Căn lề: `right` (số tiền), `center` (tiêu đề), `left` (đoạn văn).
+  - `--roughness`: Hệ số rỗ thớ giấy và hạt mực scan (mặc định: `1.0`; đặt `1.2..1.5` nếu muốn rỗ nhiều hơn; đặt `0.5..0.8` nếu muốn mịn hơn; đặt `0.0` nếu muốn phẳng).
   - `--color R G B`: Ép màu mực (ví dụ: `--color 74 75 81`).
   - `--bg-color R G B`: Ép màu giấy nền (ví dụ: `--bg-color 254 254 254`).
   - `--out`: Tên file PDF xuất ra (nếu không truyền sẽ ghi đè file gốc).
@@ -239,7 +247,7 @@ python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DU
 ### Lệnh 2: `insert` (Chèn chữ/số vào tọa độ trống)
 Dùng khi tài liệu có sẵn khoảng trống (chấm lửng `...` hoặc ô chưa điền):
 ```bash
-python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [--font <FONT>] [--size <SIZE>] [--align <left|center|right>]
+python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [--font <FONT>] [--size <SIZE>] [--align <left|center|right>] [--roughness <1.0>]
 ```
 
 ---

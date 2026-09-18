@@ -26,6 +26,7 @@ if hasattr(sys.stdout, 'reconfigure'):
 import fitz  # PyMuPDF
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import numpy as np
+import cv2
 
 
 class ScannedPdfEditor:
@@ -96,12 +97,14 @@ class ScannedPdfEditor:
         # 1. Phân đoạn ký tự và nền bằng Otsu
         _, bin_img = cv2.threshold(crop_gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-        # 2. Đo màu nền giấy (lọc các pixel sáng đại diện cho giấy nền > 200)
+        # 2. Đo màu nền giấy và độ nhiễu hạt giấy (lọc các pixel sáng đại diện cho giấy nền > 200)
         bright_mask = (crop_gray > 200)
-        if np.sum(bright_mask) > 0:
+        if np.sum(bright_mask) > 10:
             bg_col = tuple(int(c) for c in np.median(crop_bgr[bright_mask], axis=0))
+            bg_std = float(np.std(crop_gray[bright_mask]))
         else:
             bg_col = (254, 254, 254)
+            bg_std = 1.85
 
         # 3. Phân tích từng thành phần liên thông ký tự (loại bỏ viền bảng và nhiễu)
         num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(bin_img)
@@ -159,6 +162,7 @@ class ScannedPdfEditor:
                 "font_file": "times.ttf", "font_alt": "arial.ttf / calibri.ttf",
                 "ink_color": (55, 52, 50), "ink_hex": "#373432",
                 "bg_color": bg_col, "bg_hex": f"#{bg_col[0]:02X}{bg_col[1]:02X}{bg_col[2]:02X}",
+                "bg_std": bg_std, "ink_std": 28.0,
                 "suggested_align": "center",
                 "align_recommendation": "Căn giữa ô (center)"
             }
@@ -179,12 +183,19 @@ class ScannedPdfEditor:
         est_font_size = int(round(med_h * 1.48))
         est_font_size = max(12, min(120, est_font_size))
 
-        # 6. Xác định màu mực quét
+        # 6. Xác định màu mực quét và độ rỗ hạt mực (ink std)
         if text_pixels:
             all_text = np.concatenate(text_pixels, axis=0)
-            ink_col = tuple(int(c) for c in np.median(all_text, axis=0))
+            gray_text = cv2.cvtColor(all_text[:, np.newaxis, :], cv2.COLOR_RGB2GRAY).ravel()
+            ink_std = float(np.std(gray_text))
+            dark_core = all_text[gray_text <= np.percentile(gray_text, 40)]
+            if len(dark_core) > 0:
+                ink_col = tuple(int(c) for c in np.median(dark_core, axis=0))
+            else:
+                ink_col = tuple(int(c) for c in np.median(all_text, axis=0))
         else:
             ink_col = (55, 52, 50)
+            ink_std = 28.0
 
         # 7. Đề xuất font Windows chính xác
         if is_bold and is_italic:
@@ -225,6 +236,8 @@ class ScannedPdfEditor:
             "ink_hex": f"#{ink_col[0]:02X}{ink_col[1]:02X}{ink_col[2]:02X}",
             "bg_color": bg_col,
             "bg_hex": f"#{bg_col[0]:02X}{bg_col[1]:02X}{bg_col[2]:02X}",
+            "bg_std": round(bg_std, 2),
+            "ink_std": round(ink_std, 2),
             "suggested_align": suggested_align,
             "align_recommendation": align_rec
         }
@@ -254,16 +267,18 @@ class ScannedPdfEditor:
         print(f"     • Font chữ chuẩn đề xuất       : {a['font_file']}")
         print(f"     • Các font chữ thay thế        : {a['font_alt']}")
         print()
-        print(f"  4. MÀU SẮC VÀ QUANG PHỔ (COLOR & BACKGROUND):")
+        print(f"  4. MÀU SẮC VÀ ĐỘ RỖ THỚ GIẤY (COLOR & TEXTURE):")
         print(f"     • Màu mực quét (Ink Color)     : RGB{a['ink_color']}  (Mã Hex: {a['ink_hex']})")
         print(f"     • Màu giấy nền (Paper Color)   : RGB{a['bg_color']}  (Mã Hex: {a['bg_hex']})")
-        print(f"     • Độ mờ hạt scan (Blur Radius) : 0.42..0.48 (tán sắc tự nhiên)")
+        print(f"     • Độ rỗ hạt mực (Roughness)    : std ~{a.get('ink_std', 28.0)} (điểm rỗ thớ giấy scan)")
+        print(f"     • Độ nhiễu giấy nền (Grain)    : std ~{a.get('bg_std', 1.85)} (kết cấu thớ giấy)")
+        print(f"     • Độ mờ tán sắc (Blur Radius)  : 0.38..0.42 (tán sắc tự nhiên)")
         print()
         print(f"  5. GỢI Ý CĂN LỀ (ALIGNMENT):")
         print(f"     • Khuyến nghị                  : {a['align_recommendation']}")
         print("-" * 76)
-        print(f"[+] CÂU LỆNH MẪU ĂN LIỀN (CHÍNH XÁC 100% THUỘC TÍNH):")
-        print(f'python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" --font {a["font_file"]} --size {a["font_size"]} --align {a["suggested_align"]} --color {a["ink_color"][0]} {a["ink_color"][1]} {a["ink_color"][2]}')
+        print(f"[+] CÂU LỆNH MẪU ĂN LIỀN (CHÍNH XÁC 100% THUỘC TÍNH & ĐỘ RỖ):")
+        print(f'python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI"')
         print("=" * 76 + "\n")
     def pick_region_interactive(self, use_zoom=True):
         """
@@ -409,6 +424,157 @@ class ScannedPdfEditor:
         print(f"[+] Đã lưu ảnh xem trước vùng ({x}, {y}, {w}, {h}) -> {output_path}")
         return crop_im
 
+    def render_scanned_text_realistic(
+        self,
+        text,
+        target_x,
+        baseline_y,
+        font_name,
+        font_size,
+        align="right",
+        text_color=(74, 75, 81),
+        bg_color=(254, 254, 254),
+        bg_std=1.85,
+        ink_std=30.0,
+        roughness=1.0,
+        blur_radius=0.38
+    ):
+        """
+        Vẽ văn bản mô phỏng chân thực bản scan:
+        1. Tạo viền chữ gồ ghề theo thớ giấy scan (Edge Roughness & Jitter).
+        2. Tạo hạt mực scan đa tầng (Multi-Scale Toner Grain) với độ sâu lõi nét chữ (Core Darkening).
+        3. Tạo điểm rỗ (Micro-Pores / Pinhole Voids) - các vi lỗ bọt khí mực/thớ giấy lộ sáng bên trong nét chữ.
+        4. Tạo bụi mực bay vi mô (Satellite Toner Dust) quanh đường biên.
+        5. Tán sắc quang học của đầu quét scan (Optical PSF Gaussian Blur).
+        """
+        font_path = self.get_system_font(font_name)
+        scale = 2
+        f_size_2x = int(round(font_size * scale))
+        font_2x = ImageFont.truetype(font_path, f_size_2x)
+        font_1x = ImageFont.truetype(font_path, font_size)
+
+        bbox_2x = font_2x.getbbox(text)
+        left_2x, top_2x, right_2x, bottom_2x = bbox_2x
+        actual_text_w_1x = (right_2x - left_2x) // scale
+        actual_text_h_1x = (bottom_2x - top_2x) // scale
+
+        pad_2x = int(24 * scale)
+        w_2x = (right_2x - left_2x) + pad_2x * 2
+        h_2x = (bottom_2x - top_2x) + pad_2x * 2
+
+        mask_im = Image.new("L", (w_2x, h_2x), 0)
+        draw = ImageDraw.Draw(mask_im)
+        draw_x = pad_2x - left_2x
+        draw_y = pad_2x - top_2x
+        draw.text((draw_x, draw_y), text, fill=255, font=font_2x)
+
+        mask_2x = np.array(mask_im, dtype=np.float32) / 255.0
+
+        if roughness > 0:
+            # 1. Điểm rỗ & gồ ghề viền chữ theo thớ giấy scan (Multi-frequency Edge Jitter)
+            nh, nw = mask_2x.shape
+            edge_noise1 = np.random.normal(0, 1, (nh // 4 + 1, nw // 4 + 1)).astype(np.float32)
+            edge_noise1 = cv2.resize(edge_noise1, (nw, nh))[:nh, :nw]
+
+            edge_noise2 = np.random.normal(0, 1, (nh // 2 + 1, nw // 2 + 1)).astype(np.float32)
+            edge_noise2 = cv2.resize(edge_noise2, (nw, nh))[:nh, :nw]
+
+            combined_edge = 0.65 * edge_noise1 + 0.35 * edge_noise2
+
+            boundary = (mask_2x > 0.02) & (mask_2x < 0.98)
+            jittered_2x = mask_2x.copy()
+            jittered_2x[boundary] += 0.28 * roughness * combined_edge[boundary]
+
+            # Bụi mực vệ tinh quanh viền
+            dust = (np.random.random(mask_2x.shape) < (0.012 * roughness)) & (mask_2x > 0.0) & (mask_2x < 0.3)
+            jittered_2x[dust] = np.random.uniform(0.35, 0.75, size=np.sum(dust))
+            jittered_2x = np.clip(jittered_2x, 0.0, 1.0)
+        else:
+            jittered_2x = mask_2x
+
+        # Hạ về độ phân giải gốc 1x bằng phương pháp tích phân diện tích (Area Filtering)
+        w_1x = w_2x // scale
+        h_1x = h_2x // scale
+        mask_1x = cv2.resize(jittered_2x, (w_1x, h_1x), interpolation=cv2.INTER_AREA)
+
+        # 2. Độ sâu lõi nét chữ (Centerline Core Darkening)
+        stroke_binary = (mask_1x > 0.35).astype(np.uint8)
+        dist = cv2.distanceTransform(stroke_binary, cv2.DIST_L2, 5)
+        max_d = np.max(dist) if np.max(dist) > 0 else 1.0
+        core_dark = np.clip(dist / (max_d * 0.7), 0.0, 1.0)
+
+        # 3. Hạt mực scan đa tầng (Fine grain & Low-frequency toner distribution)
+        if roughness > 0:
+            fine_grain = np.random.normal(0, ink_std * 0.72 * roughness, (h_1x, w_1x)).astype(np.float32)
+            fine_grain = cv2.GaussianBlur(fine_grain, (3, 3), 0.45)
+
+            low_grain = np.random.normal(0, ink_std * 0.40 * roughness, (max(1, h_1x // 5), max(1, w_1x // 5))).astype(np.float32)
+            low_grain = cv2.resize(low_grain, (w_1x, h_1x))
+
+            # 4. Điểm rỗ (Micro-Pores / Pinhole Voids - các lỗ bọt khí mực/thớ giấy lộ sáng vi mô)
+            pores = np.zeros((h_1x, w_1x), dtype=np.float32)
+            core_mask = mask_1x > 0.50
+            num_core = np.sum(core_mask)
+            if num_core > 0:
+                num_pores = int(num_core * 0.032 * roughness)
+                cy, cx = np.where(core_mask)
+                if len(cy) > 0 and num_pores > 0:
+                    indices = np.random.choice(len(cy), size=num_pores, replace=False)
+                    for idx in indices:
+                        py, px = cy[idx], cx[idx]
+                        r = np.random.choice([1, 1, 2])
+                        val = np.random.uniform(45.0, 115.0)
+                        cv2.circle(pores, (px, py), r, val, -1)
+            pores = cv2.GaussianBlur(pores, (3, 3), 0.65)
+        else:
+            fine_grain = np.zeros((h_1x, w_1x), dtype=np.float32)
+            low_grain = np.zeros((h_1x, w_1x), dtype=np.float32)
+            pores = np.zeros((h_1x, w_1x), dtype=np.float32)
+
+        # Tính tọa độ dán (paste_x, paste_y)
+        bbox_zero_1x = font_1x.getbbox("0")
+        baseline_offset = bbox_zero_1x[3]
+
+        if align == "right":
+            paste_x = target_x - actual_text_w_1x - pad_2x // scale
+        elif align == "center":
+            paste_x = target_x - actual_text_w_1x // 2 - pad_2x // scale
+        else:  # left
+            paste_x = target_x - pad_2x // scale
+
+        paste_y = baseline_y - baseline_offset - pad_2x // scale
+
+        # Hòa trộn lên canvas self.image
+        canvas_np = np.array(self.image)
+        cx1 = max(0, paste_x)
+        cy1 = max(0, paste_y)
+        cx2 = min(self.width, paste_x + w_1x)
+        cy2 = min(self.height, paste_y + h_1x)
+
+        px1 = cx1 - paste_x
+        py1 = cy1 - paste_y
+        px2 = px1 + (cx2 - cx1)
+        py2 = py1 + (cy2 - cy1)
+
+        if cx2 > cx1 and cy2 > cy1:
+            region = canvas_np[cy1:cy2, cx1:cx2].astype(np.float32)
+            sub_mask = mask_1x[py1:py2, px1:px2, np.newaxis]
+
+            base_ink = np.array(text_color, dtype=np.float32)
+            ink_sub = np.zeros_like(region)
+            for c in range(3):
+                val_c = base_ink[c] - (core_dark[py1:py2, px1:px2] * 16.0 * roughness) + fine_grain[py1:py2, px1:px2] + low_grain[py1:py2, px1:px2] + pores[py1:py2, px1:px2]
+                ink_sub[:, :, c] = np.clip(val_c, 5.0, 248.0)
+
+            blended = region * (1.0 - sub_mask) + ink_sub * sub_mask
+            if blur_radius > 0:
+                blended = cv2.GaussianBlur(blended, (3, 3), blur_radius)
+
+            canvas_np[cy1:cy2, cx1:cx2] = np.clip(blended, 0, 255).astype(np.uint8)
+            self.image = Image.fromarray(canvas_np)
+
+        print(f"[+] Đã chèn '{text}' (căn {align}, font={font_name}, size={font_size}, roughness={roughness:.1f})")
+
     def insert_text(
         self,
         text,
@@ -418,55 +584,51 @@ class ScannedPdfEditor:
         font_size=52,
         align="left",
         color=(55, 52, 50),
-        blur_radius=0.48
+        blur_radius=0.38,
+        roughness=1.0,
+        bg_color=None,
+        bg_std=None,
+        ink_std=None
     ):
         """
-        Chèn chữ/số vào tọa độ (x, y) trên ảnh scan.
-        - x, y: Tọa độ điểm vẽ:
-          + align='left': x là mép trái của chữ
-          + align='center': x là tâm ngang của từ/dãy số
-          + align='right': x là mép phải của chữ (thích hợp cho số tiền, bảng tính)
-          + y: đường chân chữ (baseline)
+        Chèn chữ/số vào tọa độ (x, y) trên ảnh scan (Mô phỏng 100% độ rỗ và hạt mực scan).
+        - x, y: Tọa độ điểm vẽ
         - align: 'left', 'center', hoặc 'right'
-        - color: Màu mực in thực tế (mặc định xám than [55, 52, 50])
-        - blur_radius: Độ làm mờ viền hạt mực mô phỏng cảm biến máy scan (mặc định 0.48)
+        - color: Màu mực in thực tế
+        - roughness: Độ rỗ vi hạt scan (mặc định 1.0)
+        - blur_radius: Độ tán sắc quang học (mặc định 0.38)
         """
-        font_path = self.get_system_font(font_name)
-        font = ImageFont.truetype(font_path, font_size)
+        if bg_color is None or bg_std is None:
+            # Lấy mẫu màu giấy và độ nhiễu giấy xung quanh điểm chèn
+            sx = max(0, x - 30)
+            sy = max(0, y - 40)
+            crop_im = np.array(self.image.crop((sx, sy, min(self.width, sx + 80), min(self.height, sy + 60))))
+            gray_crop = cv2.cvtColor(crop_im, cv2.COLOR_RGB2GRAY)
+            bright = (gray_crop > 200)
+            if np.sum(bright) > 10:
+                bg_color = tuple(int(c) for c in np.median(crop_im[bright], axis=0))
+                bg_std = float(np.std(gray_crop[bright]))
+            else:
+                bg_color = (254, 254, 254)
+                bg_std = 1.85
 
-        # Lấy bounding box chính xác của chuỗi text bằng getbbox
-        bbox = font.getbbox(text)
-        text_left = bbox[0]
-        text_top = bbox[1]
-        text_right = bbox[2]
-        text_bottom = bbox[3]
-        actual_w = text_right - text_left
-        actual_h = text_bottom - text_top
+        if ink_std is None:
+            ink_std = 30.0
 
-        # Lấy baseline offset dựa trên ký tự chuẩn '0'
-        bbox_zero = font.getbbox("0")
-        baseline_offset = bbox_zero[3]
-
-        # Tọa độ vẽ text theo các chế độ căn lề (left, center, right)
-        if align == "right":
-            draw_x = int(x - text_right)
-        elif align == "center":
-            draw_x = int(x - text_left - actual_w / 2.0)
-        else:  # left
-            draw_x = int(x - text_left)
-
-        draw_y = int(y - baseline_offset)
-
-        # Vẽ lên lớp RGBA trong suốt rồi áp dụng hiệu ứng tán sắc scan
-        overlay = Image.new("RGBA", self.image.size, (255, 255, 255, 0))
-        od = ImageDraw.Draw(overlay)
-        od.text((draw_x, draw_y), text, fill=color + (255,), font=font)
-
-        if blur_radius > 0:
-            overlay = overlay.filter(ImageFilter.GaussianBlur(blur_radius))
-
-        self.image = Image.alpha_composite(self.image.convert("RGBA"), overlay).convert("RGB")
-        print(f"[+] Đã chèn '{text}' tại X=[{draw_x}..{draw_x + actual_w}], Y={draw_y} (căn {align}), font={font_name}, size={font_size}")
+        self.render_scanned_text_realistic(
+            text=text,
+            target_x=x,
+            baseline_y=y,
+            font_name=font_name,
+            font_size=font_size,
+            align=align,
+            text_color=color,
+            bg_color=bg_color,
+            bg_std=bg_std,
+            ink_std=ink_std,
+            roughness=roughness,
+            blur_radius=blur_radius
+        )
 
     def replace_region(
         self,
@@ -476,11 +638,12 @@ class ScannedPdfEditor:
         font_size=0,
         align="auto",
         text_color=None,
-        blur_radius=0.48,
-        bg_color=None
+        blur_radius=0.38,
+        bg_color=None,
+        roughness=1.0
     ):
         """
-        Xóa một vùng chữ cũ và thay bằng chữ mới (Tự động nhận diện & sao chép 100% thuộc tính cũ).
+        Xóa một vùng chữ cũ và thay bằng chữ mới (Tự động nhận diện & sao chép 100% thuộc tính và độ rỗ cũ).
         - box: tuple (x, y, w, h) vùng cần xóa
         - new_text: nội dung mới cần ghi vào (nếu để trống thì chỉ xóa trắng vùng đó)
         - font_name: tên font hoặc 'auto' (tự phát hiện ĐẬM/NGHIÊNG/ĐỨNG để chọn timesbd/times/timesi/timesbi)
@@ -488,6 +651,7 @@ class ScannedPdfEditor:
         - align: 'auto', 'right', 'center', 'left' (mặc định auto: số liệu -> right; chữ -> center)
         - text_color: màu mực (mặc định None: tự lấy màu mực của chữ cũ)
         - bg_color: màu giấy (mặc định None: tự lấy màu trung bình của mép viền quanh hộp xóa)
+        - roughness: độ rỗ thớ giấy và hạt mực scan (mặc định 1.0)
         """
         bx, by, bw, bh = box
 
@@ -542,10 +706,15 @@ class ScannedPdfEditor:
         else:
             bg_color = tuple(int(c) for c in bg_color)
 
-        # 2. Xóa vùng chữ cũ bằng màu giấy
-        draw = ImageDraw.Draw(self.image)
-        draw.rectangle([bx, by, bx + bw, by + bh], fill=bg_color)
-        print(f"[+] Đã xóa sạch vùng cũ ({bx}, {by}, {bw}, {bh}) với màu giấy nền RGB{bg_color}")
+        bg_std = analysis.get("bg_std", 1.85)
+        ink_std = analysis.get("ink_std", 30.0)
+
+        # 2. Xóa vùng chữ cũ bằng màu giấy CÓ KẾT CẤU THỚ GIẤY (không bị phẳng lì)
+        canvas_np = np.array(self.image)
+        paper_noise = np.random.normal(0, bg_std, (bh, bw, 3))
+        canvas_np[by:by+bh, bx:bx+bw] = np.clip(np.array(bg_color, dtype=np.float32) + paper_noise, 0, 255).astype(np.uint8)
+        self.image = Image.fromarray(canvas_np)
+        print(f"[+] Đã xóa sạch vùng cũ ({bx}, {by}, {bw}, {bh}) với màu giấy nền RGB{bg_color} (kết cấu thớ giấy std={bg_std})")
 
         # 3. Nếu có chữ mới, ghi vào vùng đã xóa
         if new_text:
@@ -583,7 +752,11 @@ class ScannedPdfEditor:
                 font_size=font_size,
                 align=align,
                 color=text_color,
-                blur_radius=blur_radius
+                blur_radius=blur_radius,
+                roughness=roughness,
+                bg_color=bg_color,
+                bg_std=bg_std,
+                ink_std=ink_std
             )
 
     def save(self, output_pdf_path=None, quality=95):
@@ -656,10 +829,11 @@ def main():
     p_ins.add_argument("--size", type=int, default=52, help="Cỡ font")
     p_ins.add_argument("--align", default="center", choices=["left", "center", "right"], help="Căn lề (left, center, right)")
     p_ins.add_argument("--color", nargs=3, type=int, metavar=("R", "G", "B"), help="Màu mực thủ công (mặc định: 55 52 50)")
+    p_ins.add_argument("--roughness", type=float, default=1.0, help="Độ rỗ thớ giấy và hạt mực scan (mặc định: 1.0; 0.0 là phẳng, 1.2..1.5 là rỗ đậm)")
     p_ins.add_argument("--out", help="File xuất ra (nếu không truyền sẽ ghi đè file gốc)")
 
     # 6. Lệnh replace (thay thế vùng văn bản - TỰ ĐỘNG KHỚP 100% THUỘC TÍNH)
-    p_rep = subparsers.add_parser("replace", help="Xóa vùng chữ cũ và ghi chữ mới (Tự khớp Font, Size, Đậm/Nghiêng, Màu mực, Nền)")
+    p_rep = subparsers.add_parser("replace", help="Xóa vùng chữ cũ và ghi chữ mới (Tự khớp Font, Size, Đậm/Nghiêng, Màu mực, Nền, Độ rỗ)")
     p_rep.add_argument("--pdf", required=True, help="Đường dẫn file PDF")
     p_rep.add_argument("--box", nargs=4, type=int, required=True, metavar=("X", "Y", "W", "H"), help="Vùng cần xóa")
     p_rep.add_argument("--text", default="", help="Chữ mới cần ghi")
@@ -668,6 +842,7 @@ def main():
     p_rep.add_argument("--align", default="auto", choices=["auto", "left", "center", "right"], help="Căn lề chữ mới (mặc định 'auto': số -> right, chữ -> center)")
     p_rep.add_argument("--color", nargs=3, type=int, metavar=("R", "G", "B"), help="Màu mực thủ công (mặc định: tự khớp màu chữ cũ)")
     p_rep.add_argument("--bg-color", nargs=3, type=int, metavar=("R", "G", "B"), help="Màu nền thủ công (mặc định: tự khớp màu giấy nền)")
+    p_rep.add_argument("--roughness", type=float, default=1.0, help="Độ rỗ thớ giấy và hạt mực scan (mặc định: 1.0; 0.0 là phẳng, 1.2..1.5 là rỗ đậm)")
     p_rep.add_argument("--out", help="File xuất ra (nếu không truyền sẽ ghi đè file gốc)")
 
     args = parser.parse_args()
@@ -687,12 +862,12 @@ def main():
         editor.preview_crop(x, y, w, h, args.out)
     elif args.cmd == "insert":
         col = tuple(args.color) if args.color else (55, 52, 50)
-        editor.insert_text(args.text, args.x, args.y, font_name=args.font, font_size=args.size, align=args.align, color=col)
+        editor.insert_text(args.text, args.x, args.y, font_name=args.font, font_size=args.size, align=args.align, color=col, roughness=args.roughness)
         editor.save(args.out)
     elif args.cmd == "replace":
         bg = tuple(args.bg_color) if args.bg_color else None
         col = tuple(args.color) if args.color else None
-        editor.replace_region(tuple(args.box), new_text=args.text, font_name=args.font, font_size=args.size, align=args.align, text_color=col, bg_color=bg)
+        editor.replace_region(tuple(args.box), new_text=args.text, font_name=args.font, font_size=args.size, align=args.align, text_color=col, bg_color=bg, roughness=args.roughness)
         editor.save(args.out)
 
 
