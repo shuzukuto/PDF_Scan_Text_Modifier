@@ -605,12 +605,18 @@ def main():
         roughness=1.0                 # Độ rỗ chuẩn
     )
 
-    # 3. CÁC TÍNH NĂNG NÂNG CAO KHÁC (Tùy chọn mở rộng)
-    # • Nếu muốn chèn thêm chữ vào dòng chấm chấm ... (không xóa nền):
-    # editor.insert_text(text="45", x=820, y=1580, font_name="times.ttf", size=50, align="center", roughness=1.0)
+    # 3. CÁC TÍNH NĂNG NÂNG CAO KHÁC (Nếu không cần dùng, bạn chỉ việc bôi đen xóa đi)
+    # [Ví dụ A] Chèn thêm chữ vào dòng chấm chấm ... (không xóa nền)
+    print("\n--- [Ví dụ A] Đang chèn thêm số vào chỗ trống chấm chấm... ---")
+    editor.insert_text(
+        text="45", x=820, y=1580, font_name="times.ttf", size=50, align="center", roughness=1.0
+    )
 
-    # • Nếu muốn xóa trắng một con dấu/chữ thừa (Whiteout):
-    # editor.replace_region(box=(1800, 2800, 350, 150), new_text="", roughness=1.0)
+    # [Ví dụ B] Xóa trắng một con dấu/chữ thừa (Whiteout nền giấy tự nhiên)
+    print("\n--- [Ví dụ B] Đang xóa trắng vùng thừa... ---")
+    editor.replace_region(
+        box=(1800, 2800, 350, 150), new_text="", roughness=1.0
+    )
 
     # 4. LƯU FILE KẾT QUẢ
     print("\n" + "=" * 76)

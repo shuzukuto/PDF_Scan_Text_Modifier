@@ -128,30 +128,30 @@ def main():
     )
 
     # ============================================================================
-    # 3. CÁC TÍNH NĂNG NÂNG CAO KHÁC (Bỏ comment '#' ở đầu dòng nếu muốn dùng)
+    # 3. CÁC TÍNH NĂNG NÂNG CAO KHÁC (Nếu không cần dùng, bạn chỉ việc bôi đen xóa đi)
     # ============================================================================
 
     # [VÍ DỤ A - CHÈN THÊM CHỮ/SỐ VÀO CHỖ TRỐNG CHẤM CHẤM BẰNG insert_text]
     # Không xóa nền, chèn trực tiếp lên đường chân chữ Y (Baseline lấy từ lệnh pick)
-    # print("\n--- [Ví dụ A] Đang chèn thêm số vào chỗ trống chấm chấm... ---")
-    # editor.insert_text(
-    #     text="45",                  # Chữ/số cần điền
-    #     x=820,                      # Tọa độ X
-    #     y=1580,                     # Đường chân chữ Baseline Y (từ lệnh pick)
-    #     font_name="times.ttf",      # Font chữ ("times.ttf", "timesbd.ttf", "timesi.ttf"...)
-    #     font_size=50,               # Cỡ chữ (pt)
-    #     align="center",             # Căn lề ('center', 'left', 'right')
-    #     roughness=1.0               # Mức độ rỗ hạt mực scan
-    # )
+    print("\n--- [Ví dụ A] Đang chèn thêm số vào chỗ trống chấm chấm... ---")
+    editor.insert_text(
+        text="45",                  # Chữ/số cần điền
+        x=820,                      # Tọa độ X
+        y=1580,                     # Đường chân chữ Baseline Y (từ lệnh pick)
+        font_name="times.ttf",      # Font chữ ("times.ttf", "timesbd.ttf", "timesi.ttf"...)
+        font_size=50,               # Cỡ chữ (pt)
+        align="center",             # Căn lề ('center', 'left', 'right')
+        roughness=1.0               # Mức độ rỗ hạt mực scan
+    )
 
     # [VÍ DỤ B - XÓA TRẮNG HOÀN TOÀN MỘT VÙNG (BÚT XÓA NỀN GIẤY WHITEOUT)]
     # Xóa sạch con dấu thừa, ghi chú cũ và điền màu giấy nền tự nhiên (không viết gì)
-    # print("\n--- [Ví dụ B] Đang xóa trắng vùng thừa... ---")
-    # editor.replace_region(
-    #     box=(1800, 2800, 350, 150), # Tọa độ vùng cần xóa trắng
-    #     new_text="",                # new_text="" sẽ tự động xóa sạch không viết chữ
-    #     roughness=1.0               # Độ rỗ kết cấu giấy nền
-    # )
+    print("\n--- [Ví dụ B] Đang xóa trắng vùng thừa... ---")
+    editor.replace_region(
+        box=(1800, 2800, 350, 150), # Tọa độ vùng cần xóa trắng (X, Y, W, H)
+        new_text="",                # new_text="" sẽ tự động xóa sạch không viết chữ
+        roughness=1.0               # Độ rỗ kết cấu giấy nền
+    )
 
     # ============================================================================
     # 4. LƯU FILE KẾT QUẢ
