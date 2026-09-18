@@ -122,7 +122,11 @@ Phiên bản hiện tại tích hợp **thuật toán phân tích thị giác m�
   + **Viền chữ gồ ghề tự nhiên (Edge Roughness & Jitter):** Khử hoàn toàn cảm giác mép viền thẳng tắp của đồ họa vi tính, thay bằng đường biên hơi gợn theo thớ giấy scan thật.
   + **Hạt mực scan đa tầng (Multi-Scale Toner Grain):** Phân bố quang phổ hạt mực với độ sâu lõi chữ (Centerline Core Darkening - giữa nét đậm hơn, mép nét nhạt dần).
   + **Tái tạo kết cấu giấy nền khi xóa (Paper Background Grain Inpainting):** Vùng bị xóa được điền đầy bằng màu giấy nền kết hợp với độ nhiễu hạt sensor (std ~ 1.8..3.0) của chính trang giấy scan đó, không để lại mảng chữ nhật phẳng lì.
-  + **Tùy chỉnh linh hoạt qua cờ `--roughness`:** Mặc định là `1.0` (tự nhiên nhất). Bạn có thể tăng lên `1.2..1.5` cho scan giấy xơ thô, hoặc giảm về `0.5..0.8` cho văn bản in nét mịn.
+  +- **Tùy chỉnh linh hoạt qua cờ `-r` hoặc `--roughness`:** Mặc định là `1.0` (tự nhiên nhất). Bạn có thể chỉnh theo số thực `0.0 .. 2.0` hoặc dùng tên mức độ:
+    + `-r off` / `0.0`: Tắt hoàn toàn độ rỗ (vùng xóa phẳng sạch, chữ phẳng mịn).
+    + `-r low` / `0.6`: Độ rỗ nhẹ cho bản in nét thanh, giấy mịn.
+    + `-r med` / `1.0`: Mức chuẩn tự nhiên mặc định cho scan máy quét văn phòng.
+    + `-r high` / `1.4`: Độ rỗ đậm cho giấy scan xơ thô hoặc máy photocopy cũ.
 - **Tự căn lề thông minh (Auto Alignment):** Tự động căn lề phải (`right`) cho các chuỗi số/tiền tệ và căn giữa (`center`) cho từ ngữ.
 
 > **Lợi ích:** Khi chạy lệnh `replace`, bạn **không cần gõ `--font`, `--size`, `--color`**. Script sẽ tự động làm tất cả để chữ mới khớp 100% với văn bản gốc cả về hình dáng, màu mực lẫn độ rỗ scan!
@@ -205,8 +209,14 @@ Khi bạn chọn vùng bằng lệnh `pick`, script sẽ phân tích và in ra b
   5. GỢI Ý CĂN LỀ (ALIGNMENT):
      • Khuyến nghị                  : Căn lề PHẢI (right - số liệu/tiền tệ/bảng tính)
 ----------------------------------------------------------------------------
-[+] CÂU LỆNH MẪU ĂN LIỀN (CHÍNH XÁC 100% THUỘC TÍNH & ĐỘ RỖ):
-python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI"
+[+] GỢI Ý CÂU LỆNH THAY THẾ (CÓ THỂ TÙY CHỌN MỨC ĐỘ RỖ -r / --roughness):
+  • Lệnh tự động chuẩn (Độ rỗ tự nhiên mặc định 1.0):
+    python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI"
+
+  • Tùy chọn mức độ rỗ (-r / --roughness):
+    - Độ rỗ nhiều (scan cũ, giấy xơ thô): python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" -r 1.3
+    - Độ rỗ mịn nhẹ (bản in nét thanh)  : python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" -r 0.6
+    - Tắt độ rỗ (chữ phẳng sắc nét)     : python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" -r 0.0
 ============================================================================
 ```
 
@@ -224,6 +234,20 @@ python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 5
 
 ## 5. Cú Pháp Các Lệnh CLI Chính
 
+### Bảng Tra Cứu Tùy Chọn Mức Độ Rỗ (`-r` hoặc `--roughness`)
+
+Cả lệnh `replace` và `insert` đều hỗ trợ tham số `-r` (hoặc `--roughness`) để điều chỉnh mức độ rỗ:
+
+| Cách gõ tham số | Giá trị số quy đổi | Mô tả & Tình huống khuyên dùng |
+| :--- | :---: | :--- |
+| `-r off` hoặc `-r 0.0` | `0.0` | **Tắt rỗ hoàn toàn:** Chữ phẳng nét, vùng xóa phẳng hoàn toàn. Phù hợp tài liệu PDF kỹ thuật số không qua máy scan. |
+| `-r low` hoặc `-r 0.6` | `0.6` | **Rỗ nhẹ / Nét mịn:** Chữ in laser trên giấy mịn văn phòng, tài liệu scan độ phân giải cao còn mới. |
+| `-r med` hoặc `-r 1.0` | `1.0` *(Mặc định)* | **Chuẩn tự nhiên:** Mô phỏng hoàn hảo độ rỗ vi hạt scan văn phòng thông dụng. |
+| `-r high` hoặc `-r 1.4` | `1.4` | **Rỗ đậm / Giấy thô:** Scan từ bản photocopy cũ, máy quét nhiều bụi hạt, giấy xơ xước. |
+| `-r 1.2` / `-r 1.6`... | Tự do `0.0..2.0` | Tùy biến tự do bất kỳ số thực nào bạn muốn. |
+
+---
+
 ### Lệnh 1: `replace` (Thay thế văn bản)
 ```bash
 python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DUNG> [CÁC_CỜ_TÙY_CHỌN]
@@ -233,11 +257,22 @@ python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DU
   ```bash
   python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000"
   ```
-- **Chế độ Chỉnh tay Chuyên sâu (Khi muốn ép kiểu chữ và độ rỗ theo ý muốn):**
+- **Chế độ Tùy Chỉnh Độ Rỗ Cực Nhanh (Thêm cờ `-r`):**
+  ```bash
+  # Tăng độ rỗ lên mức cao (-r high hoặc -r 1.3):
+  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r high
+
+  # Giảm độ rỗ nhẹ mịn (-r low hoặc -r 0.6):
+  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r low
+
+  # Tắt rỗ, viết chữ phẳng hoàn toàn (-r off hoặc -r 0.0):
+  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r off
+  ```
+- **Chế độ Chỉnh tay Chuyên sâu (Khi muốn ép font chữ/màu sắc cụ thể):**
   - `--font`: Tên file font (`timesbd.ttf`, `times.ttf`, `timesi.ttf`, `arial.ttf`, `GOTHIC.TTF`...).
   - `--size`: Cỡ font số nguyên (ví dụ: `52`, `54`).
   - `--align`: Căn lề: `right` (số tiền), `center` (tiêu đề), `left` (đoạn văn).
-  - `--roughness`: Hệ số rỗ thớ giấy và hạt mực scan (mặc định: `1.0`; đặt `1.2..1.5` nếu muốn rỗ nhiều hơn; đặt `0.5..0.8` nếu muốn mịn hơn; đặt `0.0` nếu muốn phẳng).
+  - `-r`, `--roughness`: Mức độ rỗ thớ giấy và hạt mực scan (`0.0..2.0` hoặc `off`, `low`, `med`, `high`).
   - `--color R G B`: Ép màu mực (ví dụ: `--color 74 75 81`).
   - `--bg-color R G B`: Ép màu giấy nền (ví dụ: `--bg-color 254 254 254`).
   - `--out`: Tên file PDF xuất ra (nếu không truyền sẽ ghi đè file gốc).
@@ -247,7 +282,11 @@ python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DU
 ### Lệnh 2: `insert` (Chèn chữ/số vào tọa độ trống)
 Dùng khi tài liệu có sẵn khoảng trống (chấm lửng `...` hoặc ô chưa điền):
 ```bash
-python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [--font <FONT>] [--size <SIZE>] [--align <left|center|right>] [--roughness <1.0>]
+python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [--font <FONT>] [--size <SIZE>] [--align <left|center|right>] [-r <MỨC_ĐỘ_RỖ>]
+```
+Ví dụ:
+```bash
+python edit_scanned_pdf.py insert --pdf "CCF_000372_.pdf" --text "45" --x 820 --y 1580 -r 1.2
 ```
 
 ---
@@ -366,13 +405,13 @@ Dưới đây là tổng hợp tất cả các tác vụ phổ biến nhất tr�
 ---
 
 ### Ví dụ 10: Chạy script Python tự động sửa hàng loạt nhiều ô
-- **Tình huống:** Bạn cần sửa đồng thời 4 ô trên cùng một trang: Đơn giá, Thành tiền, Thuế VAT và Tổng tiền, sau đó lưu lại file mới.
+- **Tình huống:** Bạn cần sửa đồng thời 5 ô trên cùng một trang: Đơn giá, Thành tiền, Thuế VAT và Tổng tiền, có thể tùy chọn mức độ rỗ `roughness` cho từng ô hoặc cho toàn bộ tài liệu, sau đó lưu lại file mới.
 - Tạo một file script ngắn (ví dụ `sua_hang_loat.py`):
   ```python
   from edit_scanned_pdf import ScannedPdfEditor
 
-  # Mở file PDF scan
-  editor = ScannedPdfEditor("CCF_000372_.pdf", page_num=0)
+  # Mở file PDF scan (có thể đặt mức độ rỗ mặc định cho cả tài liệu, vd: default_roughness=1.1 hoặc "med")
+  editor = ScannedPdfEditor("CCF_000372_.pdf", page_num=0, default_roughness=1.0)
 
   # 1. Sửa Số lượng (dòng 1) - Tự động nhận diện chữ thường
   editor.replace_region(box=(1615, 992, 135, 55), new_text="4,750")
@@ -380,11 +419,11 @@ Dưới đây là tổng hợp tất cả các tác vụ phổ biến nhất tr�
   # 2. Sửa Thành tiền (dòng 1) - Tự động nhận diện chữ thường
   editor.replace_region(box=(2096, 996, 260, 53), new_text="270,750,000")
 
-  # 3. Sửa Cộng tiền hàng (dòng 2) - Tự động nhận diện chữ ĐẬM (Bold)
-  editor.replace_region(box=(2096, 1086, 260, 50), new_text="270,750,000")
+  # 3. Sửa Cộng tiền hàng (dòng 2) - Tự động nhận diện chữ ĐẬM (Bold), tùy chọn độ rỗ 1.2
+  editor.replace_region(box=(2096, 1086, 260, 50), new_text="270,750,000", roughness=1.2)
 
-  # 4. Sửa Thuế GTGT 8% (dòng 3) - Tự động nhận diện chữ ĐẬM (Bold)
-  editor.replace_region(box=(2096, 1170, 260, 50), new_text="21,660,000")
+  # 4. Sửa Thuế GTGT 8% (dòng 3) - Tự động nhận diện chữ ĐẬM (Bold), dùng tên mức "high"
+  editor.replace_region(box=(2096, 1170, 260, 50), new_text="21,660,000", roughness="high")
 
   # 5. Sửa Tổng cộng thanh toán (dòng 4) - Tự động nhận diện chữ ĐẬM (Bold)
   editor.replace_region(box=(2096, 1260, 260, 50), new_text="292,410,000")

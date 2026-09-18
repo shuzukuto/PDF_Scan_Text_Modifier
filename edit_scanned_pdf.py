@@ -29,10 +29,52 @@ import numpy as np
 import cv2
 
 
+def parse_roughness(val):
+    """
+    Chuyển đổi tham số độ rỗ sang số thực float.
+    Hỗ trợ:
+      - Số thực: 0.0 .. 2.0 (ví dụ: 1.0, 1.2, 0.6, 0.0)
+      - Tên mức: 'off'/'none' (0.0), 'low'/'nhe' (0.6), 'med'/'medium'/'chuan' (1.0), 'high'/'dam' (1.4)
+    """
+    if val is None:
+        return 1.0
+    if isinstance(val, (int, float)):
+        return max(0.0, float(val))
+    s = str(val).strip().lower()
+    mapping = {
+        "off": 0.0,
+        "none": 0.0,
+        "no": 0.0,
+        "khong": 0.0,
+        "low": 0.6,
+        "nhe": 0.6,
+        "it": 0.6,
+        "min": 0.6,
+        "med": 1.0,
+        "medium": 1.0,
+        "vua": 1.0,
+        "chuan": 1.0,
+        "auto": 1.0,
+        "normal": 1.0,
+        "high": 1.4,
+        "nhieu": 1.4,
+        "dam": 1.4,
+        "ro": 1.4,
+        "very_high": 1.8,
+    }
+    if s in mapping:
+        return mapping[s]
+    try:
+        return max(0.0, float(s))
+    except ValueError:
+        return 1.0
+
+
 class ScannedPdfEditor:
-    def __init__(self, pdf_path, page_num=0):
+    def __init__(self, pdf_path, page_num=0, default_roughness=1.0):
         self.pdf_path = pdf_path
         self.page_num = page_num
+        self.default_roughness = parse_roughness(default_roughness)
         self.doc = fitz.open(pdf_path)
         self.page = self.doc[page_num]
         
@@ -274,12 +316,19 @@ class ScannedPdfEditor:
         print(f"     • Độ nhiễu giấy nền (Grain)    : std ~{a.get('bg_std', 1.85)} (kết cấu thớ giấy)")
         print(f"     • Độ mờ tán sắc (Blur Radius)  : 0.38..0.42 (tán sắc tự nhiên)")
         print()
-        print(f"  5. GỢI Ý CĂN LỀ (ALIGNMENT):")
-        print(f"     • Khuyến nghị                  : {a['align_recommendation']}")
-        print("-" * 76)
-        print(f"[+] CÂU LỆNH MẪU ĂN LIỀN (CHÍNH XÁC 100% THUỘC TÍNH & ĐỘ RỖ):")
-        print(f'python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI"')
-        print("=" * 76 + "\n")
+        print(f"""  5. GỢI Ý CĂN LỀ (ALIGNMENT):
+     • Khuyến nghị                  : {a['align_recommendation']}
+----------------------------------------------------------------------------
+[+] GỢI Ý CÂU LỆNH THAY THẾ (CÓ THỂ TÙY CHỌN MỨC ĐỘ RỖ -r / --roughness):
+  • Lệnh tự động chuẩn (Độ rỗ tự nhiên mặc định 1.0):
+    python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI"
+
+  • Tùy chọn mức độ rỗ (-r / --roughness):
+    - Độ rỗ nhiều (scan cũ, giấy xơ thô): python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" -r 1.3
+    - Độ rỗ mịn nhẹ (bản in nét thanh)  : python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" -r 0.6
+    - Tắt độ rỗ (chữ phẳng sắc nét)     : python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" -r 0.0
+============================================================================
+""" + "\n")
     def pick_region_interactive(self, use_zoom=True):
         """
         Mở cửa sổ hiển thị trang PDF, cho phép dùng chuột kéo chọn vùng và tự in ra tọa độ, size, font.
@@ -585,7 +634,7 @@ class ScannedPdfEditor:
         align="left",
         color=(55, 52, 50),
         blur_radius=0.38,
-        roughness=1.0,
+        roughness=None,
         bg_color=None,
         bg_std=None,
         ink_std=None
@@ -595,9 +644,11 @@ class ScannedPdfEditor:
         - x, y: Tọa độ điểm vẽ
         - align: 'left', 'center', hoặc 'right'
         - color: Màu mực in thực tế
-        - roughness: Độ rỗ vi hạt scan (mặc định 1.0)
+        - roughness: Mức độ rỗ vi hạt scan (số thực 0.0..2.0 hoặc 'off', 'low', 'med', 'high', mặc định None -> lấy default_roughness 1.0)
         - blur_radius: Độ tán sắc quang học (mặc định 0.38)
         """
+        r_val = parse_roughness(self.default_roughness if roughness is None else roughness)
+
         if bg_color is None or bg_std is None:
             # Lấy mẫu màu giấy và độ nhiễu giấy xung quanh điểm chèn
             sx = max(0, x - 30)
@@ -626,7 +677,7 @@ class ScannedPdfEditor:
             bg_color=bg_color,
             bg_std=bg_std,
             ink_std=ink_std,
-            roughness=roughness,
+            roughness=r_val,
             blur_radius=blur_radius
         )
 
@@ -640,7 +691,7 @@ class ScannedPdfEditor:
         text_color=None,
         blur_radius=0.38,
         bg_color=None,
-        roughness=1.0
+        roughness=None
     ):
         """
         Xóa một vùng chữ cũ và thay bằng chữ mới (Tự động nhận diện & sao chép 100% thuộc tính và độ rỗ cũ).
@@ -651,9 +702,10 @@ class ScannedPdfEditor:
         - align: 'auto', 'right', 'center', 'left' (mặc định auto: số liệu -> right; chữ -> center)
         - text_color: màu mực (mặc định None: tự lấy màu mực của chữ cũ)
         - bg_color: màu giấy (mặc định None: tự lấy màu trung bình của mép viền quanh hộp xóa)
-        - roughness: độ rỗ thớ giấy và hạt mực scan (mặc định 1.0)
+        - roughness: mức độ rỗ thớ giấy và hạt mực scan (0.0..2.0 hoặc 'off', 'low', 'med', 'high', mặc định None -> 1.0)
         """
         bx, by, bw, bh = box
+        r_val = parse_roughness(self.default_roughness if roughness is None else roughness)
 
         # 1. Phân tích vùng cũ TRƯỚC KHI XÓA để lấy toàn bộ thuộc tính văn bản gốc
         analysis = self.analyze_region(bx, by, bw, bh)
@@ -711,10 +763,13 @@ class ScannedPdfEditor:
 
         # 2. Xóa vùng chữ cũ bằng màu giấy CÓ KẾT CẤU THỚ GIẤY (không bị phẳng lì)
         canvas_np = np.array(self.image)
-        paper_noise = np.random.normal(0, bg_std, (bh, bw, 3))
-        canvas_np[by:by+bh, bx:bx+bw] = np.clip(np.array(bg_color, dtype=np.float32) + paper_noise, 0, 255).astype(np.uint8)
+        if r_val > 0:
+            paper_noise = np.random.normal(0, bg_std * min(1.4, max(0.5, r_val)), (bh, bw, 3))
+            canvas_np[by:by+bh, bx:bx+bw] = np.clip(np.array(bg_color, dtype=np.float32) + paper_noise, 0, 255).astype(np.uint8)
+        else:
+            canvas_np[by:by+bh, bx:bx+bw] = np.array(bg_color, dtype=np.uint8)
         self.image = Image.fromarray(canvas_np)
-        print(f"[+] Đã xóa sạch vùng cũ ({bx}, {by}, {bw}, {bh}) với màu giấy nền RGB{bg_color} (kết cấu thớ giấy std={bg_std})")
+        print(f"[+] Đã xóa sạch vùng cũ ({bx}, {by}, {bw}, {bh}) với màu giấy nền RGB{bg_color} (thớ giấy std={bg_std:.2f}, mức độ rỗ={r_val:.1f})")
 
         # 3. Nếu có chữ mới, ghi vào vùng đã xóa
         if new_text:
@@ -753,7 +808,7 @@ class ScannedPdfEditor:
                 align=align,
                 color=text_color,
                 blur_radius=blur_radius,
-                roughness=roughness,
+                roughness=r_val,
                 bg_color=bg_color,
                 bg_std=bg_std,
                 ink_std=ink_std
@@ -829,7 +884,7 @@ def main():
     p_ins.add_argument("--size", type=int, default=52, help="Cỡ font")
     p_ins.add_argument("--align", default="center", choices=["left", "center", "right"], help="Căn lề (left, center, right)")
     p_ins.add_argument("--color", nargs=3, type=int, metavar=("R", "G", "B"), help="Màu mực thủ công (mặc định: 55 52 50)")
-    p_ins.add_argument("--roughness", type=float, default=1.0, help="Độ rỗ thớ giấy và hạt mực scan (mặc định: 1.0; 0.0 là phẳng, 1.2..1.5 là rỗ đậm)")
+    p_ins.add_argument("-r", "--roughness", default="1.0", help="Tùy chọn mức độ rỗ: số 0.0..2.0 (vd: 1.0, 1.3, 0.6, 0.0) hoặc tên mức: off, low, med, high (mặc định: 1.0)")
     p_ins.add_argument("--out", help="File xuất ra (nếu không truyền sẽ ghi đè file gốc)")
 
     # 6. Lệnh replace (thay thế vùng văn bản - TỰ ĐỘNG KHỚP 100% THUỘC TÍNH)
@@ -842,7 +897,7 @@ def main():
     p_rep.add_argument("--align", default="auto", choices=["auto", "left", "center", "right"], help="Căn lề chữ mới (mặc định 'auto': số -> right, chữ -> center)")
     p_rep.add_argument("--color", nargs=3, type=int, metavar=("R", "G", "B"), help="Màu mực thủ công (mặc định: tự khớp màu chữ cũ)")
     p_rep.add_argument("--bg-color", nargs=3, type=int, metavar=("R", "G", "B"), help="Màu nền thủ công (mặc định: tự khớp màu giấy nền)")
-    p_rep.add_argument("--roughness", type=float, default=1.0, help="Độ rỗ thớ giấy và hạt mực scan (mặc định: 1.0; 0.0 là phẳng, 1.2..1.5 là rỗ đậm)")
+    p_rep.add_argument("-r", "--roughness", default="1.0", help="Tùy chọn mức độ rỗ: số 0.0..2.0 (vd: 1.0, 1.3, 0.6, 0.0) hoặc tên mức: off, low, med, high (mặc định: 1.0)")
     p_rep.add_argument("--out", help="File xuất ra (nếu không truyền sẽ ghi đè file gốc)")
 
     args = parser.parse_args()
