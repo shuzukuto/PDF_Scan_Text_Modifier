@@ -189,7 +189,8 @@ Khi bạn chọn vùng bằng lệnh `pick`, script sẽ phân tích và in ra b
   1. TỌA ĐỘ VÀ KÍCH THƯỚC VÙNG CHỌN (ROI):
      • Tọa độ góc trên trái (X, Y)  : X = 2096, Y = 1086
      • Kích thước vùng (W x H)      : Chiều rộng 260 px, Chiều cao 50 px
-     • Tham số tương ứng             : --box 2096 1086 260 50
+     • Hộp vùng xóa (cho replace)   : --box 2096 1086 260 50
+     • ĐƯỜNG CHÂN CHỮ Y (BASELINE)  : Y = 1129  (dùng trực tiếp cho tham số --y của lệnh insert)
 
   2. HÌNH THÁI VÀ ĐỊNH DẠNG KÝ TỰ (TYPOGRAPHY):
      • Kiểu dáng chữ (Font Style)   : ĐẬM (Bold)
@@ -205,23 +206,28 @@ Khi bạn chọn vùng bằng lệnh `pick`, script sẽ phân tích và in ra b
      • Các font chữ thay thế        : arialbd.ttf (Arial Bold) / calibrib.ttf (Calibri Bold)
 
   4. MÀU SẮC VÀ ĐỘ RỖ THỚ GIẤY (COLOR & TEXTURE):
-     • Màu mực quét (Ink Color)     : RGB(74, 75, 81)  (Mã Hex: #4A4B51)
+     • Màu mực quét (Ink Color)     : RGB(58, 58, 64)  (Mã Hex: #3A3A40)
      • Màu giấy nền (Paper Color)   : RGB(253, 254, 254)  (Mã Hex: #FDFEFE)
-     • Độ rỗ hạt mực (Roughness)    : std ~30.2 (điểm rỗ thớ giấy scan)
+     • Độ rỗ hạt mực (Roughness)    : std ~34.0 (điểm rỗ thớ giấy scan)
      • Độ nhiễu giấy nền (Grain)    : std ~1.85 (kết cấu thớ giấy)
      • Độ mờ tán sắc (Blur Radius)  : 0.38..0.42 (tán sắc tự nhiên)
 
-  5. GỢI Ý CĂN LỀ (ALIGNMENT):
-     • Khuyến nghị                  : Căn lề PHẢI (right - số liệu/tiền tệ/bảng tính)
+  5. GỢI Ý CĂN LỀ & TỌA ĐỘ CHÈN (ALIGNMENT & INSERT):
+     • Căn lề khuyến nghị           : Căn lề PHẢI (right - số liệu/tiền tệ/bảng tính)
+     • Tọa độ chèn mẫu (insert)     : --x 2356 --y 1129
 ----------------------------------------------------------------------------
-[+] GỢI Ý CÂU LỆNH THAY THẾ (CÓ THỂ TÙY CHỌN MỨC ĐỘ RỖ -r / --roughness):
-  • Lệnh tự động chuẩn (Độ rỗ tự nhiên mặc định 1.0):
-    python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI"
+[+] CÂU LỆNH MẪU ĂN LIỀN (COPY DÙNG NGAY):
 
-  • Tùy chọn mức độ rỗ (-r / --roughness):
-    - Độ rỗ nhiều (scan cũ, giấy xơ thô): python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" -r 1.3
-    - Độ rỗ mịn nhẹ (bản in nét thanh)  : python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" -r 0.6
-    - Tắt độ rỗ (chữ phẳng sắc nét)     : python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI" -r 0.0
+  1. LỆNH THAY THẾ (replace - Tự động xóa cũ & ghi mới, khớp 100% thuộc tính):
+     python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "NỘI_DUNG_MỚI"
+
+     * Tùy chọn thêm độ rỗ nếu cần:
+       - Rỗ nhiều (giấy xơ thô, scan cũ) : thêm -r 1.3  (hoặc -r high)
+       - Rỗ nhẹ (bản in nét thanh, mịn)  : thêm -r 0.6  (hoặc -r low)
+       - Tắt rỗ (chữ phẳng sắc nét)      : thêm -r 0.0  (hoặc -r off)
+
+  2. LỆNH CHÈN THÊM (insert - Không xóa nền, chèn đúng đường chân chữ Baseline Y=1129):
+     python edit_scanned_pdf.py insert --pdf "CCF_000372_.pdf" --text "NỘI_DUNG_MỚI" --x 2356 --y 1129 --font timesbd.ttf --size 52 --align right
 ============================================================================
 ```
 
@@ -231,9 +237,10 @@ Khi bạn chọn vùng bằng lệnh `pick`, script sẽ phân tích và in ra b
    - Nếu là chữ THƯỜNG: Script đề xuất `times.ttf` (Times New Roman Regular).
    - Nếu là chữ NGHIÊNG: Script đề xuất `timesi.ttf` (Times New Roman Italic).
 2. **Cỡ font quy đổi (Font Size):** Cỡ font chuẩn (point size) tương thích với Windows Typography Engine khi in lên độ phân giải scan gốc.
-3. **Màu mực & Độ rỗ scan:** Trích xuất màu mực lõi thực tế và độ phân tán hạt mực (`std ~30`), giúp nét chữ mới có các điểm rỗ vi mô tự nhiên như bản scan.
+3. **Màu mực & Độ rỗ scan:** Trích xuất màu mực lõi thực tế và độ phân tán hạt mực (`std ~30..34`), giúp nét chữ mới có các điểm rỗ vi mô tự nhiên như bản scan.
 4. **Màu giấy & Kết cấu giấy:** Tái tạo thớ giấy nền cục bộ khi xóa, không để lại mảng phẳng trơn láng.
 5. **Gợi ý căn lề (Alignment):** Tự động phát hiện loại nội dung để gợi ý lề phải (cho số tiền trong ô) hoặc căn giữa/trái.
+6. **Đường chân chữ Y (Baseline):** Script tự động quét toàn bộ đáy ký tự của các chữ cũ trong ô và in ra chính xác tọa độ đường chân chữ `Y`. Bạn chỉ việc copy giá trị `Y` này gán vào lệnh `insert --y <Y>`, **hoàn toàn không cần phải tính toán thủ công rườm rà**.
 
 ## 5. Hướng Dẫn Chi Tiết Toàn Diện Về Lệnh `replace`, `insert` Và Các Tham Số
 
@@ -325,7 +332,7 @@ python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [C
 | **`--pdf`** | **BẮT BUỘC** | *Không* | Đường dẫn tới file PDF scan gốc cần chèn chữ. | Luôn phải cung cấp. |
 | **`--text`** | **BẮT BUỘC** | *Không* | Nội dung chữ hoặc số cần chèn vào (ví dụ: `"45"`, `"Nguyễn Văn A"`). | Luôn phải cung cấp. |
 | **`--x`** | **BẮT BUỘC** | *Không* | **Tọa độ hoành độ X (pixel)** để bắt đầu đặt chữ:<br>• Nếu `--align left`: X là vị trí mép bên trái của chữ đầu tiên.<br>• Nếu `--align center`: X là vị trí điểm chính giữa của toàn bộ đoạn chữ.<br>• Nếu `--align right`: X là vị trí mép bên phải của chữ cuối cùng. | Bắt buộc. Xác định qua lệnh `pick` hoặc mở ảnh bằng MS Paint để xem tọa độ. |
-| **`--y`** | **BẮT BUỘC** | *Không* | **Tọa độ tung độ Y (pixel) — ĐÂY LÀ ĐƯỜNG CHÂN CHỮ (BASELINE)**:<br>⚠️ *Lưu ý sống còn:* Đây **không phải** là mép trên của chữ, mà là **đường kẻ mà các con chữ đứng lên trên nó** (tương tự như dòng kẻ ô ly tập viết). | Xem mục bên dưới để biết cách tính `--y` chuẩn xác từng pixel. |
+| **`--y`** | **BẮT BUỘC** | *Không* | **Tọa độ tung độ Y (pixel) — ĐÂY LÀ ĐƯỜNG CHÂN CHỮ (BASELINE)**:<br>⚠️ *Lưu ý:* Đây **không phải** là mép trên của chữ, mà là **đường kẻ mà các con chữ đứng lên trên nó** (như dòng kẻ ô ly tập viết).<br>👉 **ĐÃ ĐƯỢC TỰ ĐỘNG HÓA:** Lệnh `pick` giờ đây tự động đo và in sẵn giá trị này (`ĐƯỜNG CHÂN CHỮ Y (BASELINE): Y = ...`), bạn chỉ việc copy dán vào mà **không cần tính toán rườm rà**! |
 | **`--font`** | Tùy chọn | `'times.ttf'` | Tên font chữ Windows TrueType (`times.ttf`, `timesbd.ttf`, `timesi.ttf`, `arial.ttf`...). | Đặt `timesbd.ttf` nếu muốn chèn chữ ĐẬM, `timesi.ttf` nếu muốn chèn chữ NGHIÊNG. |
 | **`--size`** | Tùy chọn | `52` | Cỡ font chữ (pt). Mặc định `52` tương đương với chữ văn phòng tiêu chuẩn trên độ phân giải scan 300 DPI. | Tăng giảm tùy theo độ rộng hẹp của khoảng trống (ví dụ `--size 48` hoặc `--size 56`). |
 | **`--align`** | Tùy chọn | `'left'` | Căn lề của đoạn chữ so với điểm `--x`:<br>• `left`: Chữ phát triển sang bên phải điểm X.<br>• `center`: Chữ mở rộng đều sang hai bên điểm X.<br>• `right`: Chữ kết thúc tại điểm X. | • Dùng `center` khi điền vào giữa khoảng trống chấm chấm `......`.<br>• Dùng `left` khi viết tiếp sau một đoạn văn bản có sẵn. |
@@ -335,19 +342,25 @@ python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [C
 
 ---
 
-#### 🎯 Bí Quyết Xác Định Tọa Độ `--x` Và Đường Chân Chữ `--y` Cho Lệnh `insert`:
+#### 🎯 Cách Lấy Tọa Độ `--x` Và Đường Chân Chữ `--y` Cực Nhanh Từ Lệnh `pick` (Không Cần Tính Toán):
 
-1. **Cách tính nhanh tọa độ từ lệnh `pick`:**
-   - Dùng lệnh `pick` khoanh vào một chữ đã có sẵn ở cùng dòng đó.
-   - Bảng phân tích sẽ in ra: `X = ..., Y = ..., Chiều cao H = ...`.
-   - **Công thức tính đường chân chữ Y (Baseline):**
-     $$\text{Y}_{\text{insert}} \approx \text{Y}_{\text{box}} + \text{H}_{\text{box}} - 6 \text{ đến } 10 \text{ px}$$
-   - *Ví dụ:* Nếu chữ cùng hàng có `Y = 1580`, `H = 50` thì bạn chỉ cần đặt `--y 1622` là chữ mới sẽ nằm thẳng tắp trên cùng một dòng kẻ với chữ cũ!
-2. **Ví dụ câu lệnh chèn thực tế:**
-   ```bash
-   # Điền số 45 vào khoảng chấm chấm, căn giữa tại X=820, chân chữ Y=1580:
-   python edit_scanned_pdf.py insert --pdf "CCF_000372_.pdf" --text "45" --x 820 --y 1580 --font times.ttf --size 50 --align center -r 1.1 --out "DaDienSo45.pdf"
-   ```
+1. **Lấy trực tiếp từ lệnh `pick` (Khuyên dùng nhất — Ăn liền 100%):**
+   - Bạn chỉ cần chạy lệnh `pick` khoanh vào một chữ đã có sẵn ở cùng hàng đó.
+   - Script tự động đo đáy ký tự thực tế và in ra ngay:
+     ```text
+     • ĐƯỜNG CHÂN CHỮ Y (BASELINE)  : Y = 1129  (dùng trực tiếp cho tham số --y của lệnh insert)
+     • Tọa độ chèn mẫu (insert)     : --x 2356 --y 1129
+     ```
+   - Đồng thời ở cuối bảng kết quả của `pick`, script đã tạo sẵn câu lệnh mẫu hoàn chỉnh cho `insert`:
+     ```bash
+     python edit_scanned_pdf.py insert --pdf "CCF_000372_.pdf" --text "NỘI_DUNG_MỚI" --x 2356 --y 1129 --font timesbd.ttf --size 52 --align right
+     ```
+   - 👉 Bạn chỉ cần **copy nguyên câu lệnh mẫu**, đổi chữ `"NỘI_DUNG_MỚI"` thành nội dung của bạn là xong! Hoàn toàn không mất công tính toán.
+
+2. **Cách tính thủ công (Dành cho ai muốn hiểu nguyên lý hình học):**
+   - Nếu bạn đo tọa độ ô bằng MS Paint hoặc các công cụ đồ họa khác:
+     $$\text{Y}_{\text{insert (Baseline)}} \approx \text{Y}_{\text{box}} + \text{H}_{\text{box}} - 6 \text{ đến } 10 \text{ px}$$
+   - *Ví dụ:* Nếu chữ cùng hàng có mép trên `Y = 1580`, chiều cao `H = 50` thì đường chân chữ `Y` sẽ vào khoảng: $1580 + 50 - 8 = 1622$.
 
 ---
 

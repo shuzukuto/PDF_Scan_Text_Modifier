@@ -150,7 +150,7 @@ class ScannedPdfEditor:
 
         # 3. Phân tích từng thành phần liên thông ký tự (loại bỏ viền bảng và nhiễu)
         num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(bin_img)
-        char_heights, char_widths = [], []
+        char_heights, char_widths, char_bottoms = [], [], []
         char_med_strokes, char_max_strokes = [], []
         char_densities, slants = [], []
         text_pixels = []
@@ -171,6 +171,7 @@ class ScannedPdfEditor:
             c_mask = (labels[by:by+bh, bx:bx+bw] == i).astype(np.uint8)
             char_heights.append(bh)
             char_widths.append(bw)
+            char_bottoms.append(by + bh)
 
             # Mật độ mực trong khung bao của ký tự
             density = np.sum(c_mask) / float(bw * bh)
@@ -196,6 +197,7 @@ class ScannedPdfEditor:
             text_pixels.append(crop_bgr[by:by+bh, bx:bx+bw][c_mask == 1])
 
         if not char_heights:
+            theo_baseline_y = int(round(y + h * 0.82))
             return {
                 "font_size": 52, "char_h": 35.0, "char_w": 20.0,
                 "stroke_width": 4.0, "max_stroke": 6.0, "density": 0.35,
@@ -206,7 +208,8 @@ class ScannedPdfEditor:
                 "bg_color": bg_col, "bg_hex": f"#{bg_col[0]:02X}{bg_col[1]:02X}{bg_col[2]:02X}",
                 "bg_std": bg_std, "ink_std": 28.0,
                 "suggested_align": "center",
-                "align_recommendation": "Căn giữa ô (center)"
+                "align_recommendation": "Căn giữa ô (center)",
+                "baseline_y": theo_baseline_y
             }
 
         med_h = float(np.median(char_heights))
@@ -261,6 +264,20 @@ class ScannedPdfEditor:
         suggested_align = "right" if (w / h > 2.2) else "center"
         align_rec = "Căn lề PHẢI (right - số liệu/tiền tệ/bảng tính)" if suggested_align == "right" else "Căn lề GIỮA (center - chữ/tiêu đề)"
 
+        # 9. Tính đường chân chữ Y (Baseline) chính xác tuyệt đối phục vụ lệnh insert
+        if char_bottoms:
+            med_bottom = float(np.median(char_bottoms))
+            baseline_y = int(round(y + med_bottom))
+        else:
+            font_path = self.get_system_font(rec_font)
+            try:
+                font = ImageFont.truetype(font_path, est_font_size)
+                bbox_zero = font.getbbox("0")
+                digit_h = bbox_zero[3] - bbox_zero[1]
+                baseline_y = int(round(y + (h + digit_h) / 2.0)) if h >= digit_h else (y + h)
+            except Exception:
+                baseline_y = int(round(y + h * 0.82))
+
         return {
             "font_size": est_font_size,
             "char_h": round(med_h, 1),
@@ -281,18 +298,29 @@ class ScannedPdfEditor:
             "bg_std": round(bg_std, 2),
             "ink_std": round(ink_std, 2),
             "suggested_align": suggested_align,
-            "align_recommendation": align_rec
+            "align_recommendation": align_rec,
+            "baseline_y": baseline_y
         }
 
     def print_analysis(self, x, y, w, h, a):
         """In bảng kết quả phân tích tọa độ, cỡ chữ và toàn bộ thuộc tính chi tiết của văn bản ra màn hình."""
+        baseline_y = a.get("baseline_y", int(round(y + h * 0.82)))
+        suggested_align = a.get("suggested_align", "right")
+        if suggested_align == "right":
+            suggested_insert_x = x + w
+        elif suggested_align == "center":
+            suggested_insert_x = x + w // 2
+        else:
+            suggested_insert_x = x
+
         print("\n" + "=" * 76)
         print(f"[+] CHI TIẾT TOÀN BỘ THUỘC TÍNH VĂN BẢN (TEXT ATTRIBUTES ANALYSIS):")
         print("-" * 76)
         print(f"  1. TỌA ĐỘ VÀ KÍCH THƯỚC VÙNG CHỌN (ROI):")
         print(f"     • Tọa độ góc trên trái (X, Y)  : X = {x}, Y = {y}")
         print(f"     • Kích thước vùng (W x H)      : Chiều rộng {w} px, Chiều cao {h} px")
-        print(f"     • Tham số tương ứng             : --box {x} {y} {w} {h}")
+        print(f"     • Hộp vùng xóa (cho replace)   : --box {x} {y} {w} {h}")
+        print(f"     • ĐƯỜNG CHÂN CHỮ Y (BASELINE)  : Y = {baseline_y}  (dùng trực tiếp cho tham số --y của lệnh insert)")
         print()
         print(f"  2. HÌNH THÁI VÀ ĐỊNH DẠNG KÝ TỰ (TYPOGRAPHY):")
         print(f"     • Kiểu dáng chữ (Font Style)   : {a['style_desc']}")
@@ -316,17 +344,22 @@ class ScannedPdfEditor:
         print(f"     • Độ nhiễu giấy nền (Grain)    : std ~{a.get('bg_std', 1.85)} (kết cấu thớ giấy)")
         print(f"     • Độ mờ tán sắc (Blur Radius)  : 0.38..0.42 (tán sắc tự nhiên)")
         print()
-        print(f"""  5. GỢI Ý CĂN LỀ (ALIGNMENT):
-     • Khuyến nghị                  : {a['align_recommendation']}
+        print(f"""  5. GỢI Ý CĂN LỀ & TỌA ĐỘ CHÈN (ALIGNMENT & INSERT):
+     • Căn lề khuyến nghị           : {a['align_recommendation']}
+     • Tọa độ chèn mẫu (insert)     : --x {suggested_insert_x} --y {baseline_y}
 ----------------------------------------------------------------------------
-[+] GỢI Ý CÂU LỆNH THAY THẾ (CÓ THỂ TÙY CHỌN MỨC ĐỘ RỖ -r / --roughness):
-  • Lệnh tự động chuẩn (Độ rỗ tự nhiên mặc định 1.0):
-    python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI"
+[+] CÂU LỆNH MẪU ĂN LIỀN (COPY DÙNG NGAY):
 
-  • Tùy chọn mức độ rỗ (-r / --roughness):
-    - Độ rỗ nhiều (scan cũ, giấy xơ thô): python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" -r 1.3
-    - Độ rỗ mịn nhẹ (bản in nét thanh)  : python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" -r 0.6
-    - Tắt độ rỗ (chữ phẳng sắc nét)     : python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI" -r 0.0
+  1. LỆNH THAY THẾ (replace - Tự động xóa cũ & ghi mới, khớp 100% thuộc tính):
+     python edit_scanned_pdf.py replace --pdf "{self.pdf_path}" --box {x} {y} {w} {h} --text "NỘI_DUNG_MỚI"
+
+     * Tùy chọn thêm độ rỗ nếu cần:
+       - Rỗ nhiều (giấy xơ thô, scan cũ) : thêm -r 1.3  (hoặc -r high)
+       - Rỗ nhẹ (bản in nét thanh, mịn)  : thêm -r 0.6  (hoặc -r low)
+       - Tắt rỗ (chữ phẳng sắc nét)      : thêm -r 0.0  (hoặc -r off)
+
+  2. LỆNH CHÈN THÊM (insert - Không xóa nền, chèn đúng đường chân chữ Baseline Y={baseline_y}):
+     python edit_scanned_pdf.py insert --pdf "{self.pdf_path}" --text "NỘI_DUNG_MỚI" --x {suggested_insert_x} --y {baseline_y} --font {a['font_file']} --size {a['font_size']} --align {suggested_align}
 ============================================================================
 """ + "\n")
     def pick_region_interactive(self, use_zoom=True):
@@ -780,8 +813,10 @@ class ScannedPdfEditor:
             bbox_zero = font.getbbox("0")
             digit_h = bbox_zero[3] - bbox_zero[1]
 
-            # Đặt chữ cân đối theo chiều dọc của hộp đã xóa
-            if bh >= digit_h:
+            # Đặt chữ theo đường chân chữ baseline cũ (nếu có), hoặc cân đối theo chiều dọc của hộp đã xóa
+            if "baseline_y" in analysis and by <= analysis["baseline_y"] <= by + bh + 4:
+                baseline_y = analysis["baseline_y"]
+            elif bh >= digit_h:
                 baseline_y = int(by + (bh + digit_h) / 2.0)
             else:
                 baseline_y = by + bh
