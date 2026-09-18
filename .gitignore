@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Scanned documents and test output files
+*.pdf
+*.jpg
+*.jpeg
+*.png
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Operating System Files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
