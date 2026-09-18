@@ -19,7 +19,12 @@ Bộ công cụ chuyên biệt để chỉnh sửa tài liệu dạng **ảnh sc
    - [Cách 2: Lệnh `find` (Tìm nhanh bằng ảnh chụp màn hình)](#cách-2-lệnh-find-tìm-nhanh-bằng-ảnh-chụp-màn-hình)
    - [Cách 3: Lệnh `extract` (Xem tọa độ bằng MS Paint)](#cách-3-lệnh-extract-xem-tọa-độ-thủ-công-bằng-ms-paint)
 4. [Giải Thích Bảng Phân Tích Thuộc Tính Của Lệnh `pick`](#4-giải-thích-bảng-phân-tích-thuộc-tính-của-lệnh-pick)
-5. [Cú Pháp Các Lệnh CLI Chính](#5-cú-pháp-các-lệnh-cli-chính)
+5. [Hướng Dẫn Chi Tiết Toàn Diện Về Lệnh `replace`, `insert` Và Các Tham Số](#5-hướng-dẫn-chi-tiết-toàn-diện-về-lệnh-replace-insert-và-các-tham-số)
+   - [5.1. So Sánh Nhanh & Khi Nào Dùng Lệnh Nào?](#51-so-sánh-nhanh--khi-nào-dùng-lệnh-nào)
+   - [5.2. Lệnh `replace` — Xóa Chữ Cũ Và Thay Thế Bằng Chữ Mới](#52-lệnh-replace--xóa-chữ-cũ-và-thay-thế-bằng-chữ-mới)
+   - [5.3. Lệnh `insert` — Chèn Chữ Mới Vào Tọa Độ Trống](#53-lệnh-insert--chèn-chữ-mới-vào-tọa-độ-trống)
+   - [5.4. Bảng Tra Cứu Toàn Diện Mức Độ Rỗ (`-r` hoặc `--roughness`)](#54-bảng-tra-cứu-toàn-diện-mức-độ-rỗ--r-hoặc---roughness)
+   - [5.5. Các Lệnh Tiện Ích Hỗ Trợ Khác (`preview`, `extract`)](#55-các-lệnh-tiện-ích-hỗ-trợ-khác-preview-extract)
 6. [Toàn Bộ 10 Ví Dụ Thực Tế & Câu Lệnh Mẫu Ăn Liền](#6-toàn-bộ-10-ví-dụ-thực-tế--câu-lệnh-mẫu-ăn-liền)
    - [Ví dụ 1: Sửa số lượng, đơn giá dòng chi tiết (Chữ thường)](#ví-dụ-1-sửa-số-lượng-đơn-giá-dòng-chi-tiết-chữ-thường)
    - [Ví dụ 2: Sửa số tiền Tổng phụ, VAT, Tổng thanh toán (Chữ ĐẬM khớp 100%)](#ví-dụ-2-sửa-số-tiền-tổng-phụ-vat-tổng-thanh-toán-chữ-đậm-bold-khớp-100)
@@ -230,78 +235,150 @@ Khi bạn chọn vùng bằng lệnh `pick`, script sẽ phân tích và in ra b
 4. **Màu giấy & Kết cấu giấy:** Tái tạo thớ giấy nền cục bộ khi xóa, không để lại mảng phẳng trơn láng.
 5. **Gợi ý căn lề (Alignment):** Tự động phát hiện loại nội dung để gợi ý lề phải (cho số tiền trong ô) hoặc căn giữa/trái.
 
+## 5. Hướng Dẫn Chi Tiết Toàn Diện Về Lệnh `replace`, `insert` Và Các Tham Số
+
+### 5.1. So Sánh Nhanh & Khi Nào Dùng Lệnh Nào?
+
+| Tiêu chí | Lệnh `pick` | Lệnh `replace` | Lệnh `insert` |
+| :--- | :--- | :--- | :--- |
+| **Mục đích chính** | **Khảo sát & Bóc tách:** Mở cửa sổ zoom tương tác, đo đạc tọa độ và toàn bộ thuộc tính văn bản cũ. | **Xóa cũ & Thay mới:** Xóa vùng chữ cũ bằng màu giấy có thớ hạt và ghi chữ mới tự động khớp 100% thuộc tính. | **Chèn thêm:** Ghi chữ/số vào khoảng trống hoặc dòng chấm `...` mà **không xóa** bất kỳ vùng nền nào. |
+| **Đầu vào bắt buộc** | `--pdf` | `--pdf`, `--box X Y W H` | `--pdf`, `--text "..."`, `--x X`, `--y Y` |
+| **Cơ chế xử lý nền giấy** | Không can thiệp file | **Tự động xóa nền:** Hòa màu giấy xung quanh + tạo nhiễu thớ giấy tự nhiên (Inpainting) | **Không xóa nền:** Chỉ phủ hạt mực mới đè lên nền giấy hiện tại |
+| **Căn lề (Alignment)** | Phân tích & Gợi ý | Tự động căn theo hộp `--box` (số -> `right`, chữ -> `center`) | Căn theo tọa độ điểm mốc `--x` (`left`, `center`, `right`) |
+| **Tình huống áp dụng** | Dùng đầu tiên trước khi muốn sửa bất kỳ vị trí nào để lấy tọa độ và thuộc tính. | Sửa số lượng, đơn giá, tổng tiền, thuế VAT, ngày tháng, tên công ty, hoặc xóa trắng nội dung thừa. | Điền số vào chỗ trống chấm chấm `......`, bổ sung số trang, đóng dấu mã hiệu vào lề giấy. |
+
 ---
 
-## 5. Cú Pháp Các Lệnh CLI Chính
+### 5.2. Lệnh `replace` — Xóa Chữ Cũ Và Thay Thế Bằng Chữ Mới (Auto-Matching 100%)
 
-### Bảng Tra Cứu Tùy Chọn Mức Độ Rỗ (`-r` hoặc `--roughness`)
+#### 💡 Cơ chế hoạt động 4 bước bên trong lệnh `replace`:
+1. **Bước 1 (Bóc tách văn bản cũ):** Trước khi xóa, thuật toán quét vùng `--box` để đo chính xác chiều cao ký tự, độ dày nét (`distanceTransform` để xác định Đậm hay Thường), độ nghiêng nét (Italic), trích xuất dải màu quang phổ mực lõi tối nhất và đo độ nhiễu hạt giấy nền xung quanh.
+2. **Bước 2 (Xóa sạch thông minh có kết cấu - Texture Inpainting):** Vùng `--box` được xóa bằng màu giấy nền trung bình kết hợp với việc tái tạo vi nhiễu thớ giấy tự nhiên (`paper_noise`), triệt tiêu hoàn toàn mảng trắng bóc phẳng lì lộ liễu.
+3. **Bước 3 (Định vị chân chữ & Căn lề):** Tự động gióng đường chân chữ (Baseline) khớp hàng với văn bản xung quanh. Nếu là số tiền -> căn lề phải (`right`); nếu là từ ngữ -> căn giữa (`center`).
+4. **Bước 4 (Vẽ chữ mới mô phỏng scan thật):** Áp dụng điểm rỗ mực li ti (Micro-pores), viền gợn sóng thớ giấy (Edge jitter), hạt tán sắc đa tầng và làm mờ quang học đầu quét (Optical blur), biến chữ mới hoàn toàn tiệp vào trang giấy scan thật.
+
+---
+
+#### 📋 Cú Pháp Tổng Quát Của Lệnh `replace`:
+```bash
+python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DUNG> [CÁC_THAM_SỐ_TÙY_CHỌN]
+```
+
+#### 🔍 Bảng Giải Thích Chi Tiết TẤT CẢ Các Tham Số Của Lệnh `replace`:
+
+| Tham số | Bắt buộc? | Giá trị mặc định | Giải thích chi tiết & Tác dụng | Khi nào nên chỉnh tay? |
+| :--- | :---: | :---: | :--- | :--- |
+| **`--pdf`** | **BẮT BUỘC** | *Không* | Đường dẫn tới file PDF scan gốc cần chỉnh sửa (ví dụ: `"CCF_000372_.pdf"`). | Luôn phải cung cấp. Nếu đường dẫn có dấu cách, bắt buộc bọc trong dấu ngoặc kép `""`. |
+| **`--box X Y W H`** | **BẮT BUỘC** | *Không* | **Bộ 4 số nguyên (pixel)** xác định tọa độ và kích thước khung chữ nhật cần xóa:<br>• `X`: Tọa độ góc trên - bên trái (hoành độ).<br>• `Y`: Tọa độ góc trên - bên trái (tung độ).<br>• `W`: Chiều rộng (Width) của vùng xóa.<br>• `H`: Chiều cao (Height) của vùng xóa. | Lấy trực tiếp từ kết quả in ra của lệnh `pick`. **Mẹo:** Khoanh vừa vặn chữ, chừa mép cách đường kẻ bảng 2-4 px để không bị xóa mất viền kẻ. |
+| **`--text`** | Tùy chọn | `""` *(Rỗng)* | Nội dung văn bản/số liệu mới cần ghi đè vào (ví dụ: `"270,750,000"`, `"Hải Phòng, ngày..."`). Hỗ trợ đầy đủ tiếng Việt có dấu Unicode. | **Mẹo Xóa Trắng (Whiteout):** Nếu muốn **xóa bỏ một vùng chữ/dấu mộc thừa** mà không viết gì vào, hãy truyền `--text ""` hoặc không truyền `--text`. |
+| **`--font`** | Tùy chọn | `'auto'` | Tên file font chữ TrueType (`.ttf`) trong `C:\Windows\Fonts`.<br>• Khi để `'auto'` (mặc định): Script tự phân tích chữ cũ, nếu chữ cũ là **ĐẬM** -> nạp `timesbd.ttf`; nếu **THƯỜNG** -> nạp `times.ttf`; nếu **NGHIÊNG** -> nạp `timesi.ttf`. | Khi muốn chủ động đổi sang font chữ khác hẳn so với văn bản gốc, ví dụ: `--font arial.ttf`, `--font calibrib.ttf`, `--font GOTHIC.TTF`. |
+| **`--size`** | Tùy chọn | `0` *(Tự đo)* | Cỡ font point size nguyên.<br>• Khi để `0` (mặc định): Script tự đo chiều cao ký tự của chữ cũ và quy đổi ra cỡ font tương ứng chính xác 100%. | Khi muốn ép cỡ chữ to hơn hoặc nhỏ hơn so với chữ cũ (ví dụ: `--size 52`, `--size 54`). |
+| **`--align`** | Tùy chọn | `'auto'` | Hướng căn lề chữ mới bên trong khung `--box`:<br>• `'auto'` (mặc định): Tự động nhận diện. Nếu `--text` là số liệu/tiền tệ -> căn phải (`right`); nếu là chữ từ ngữ -> căn giữa (`center`).<br>• `right`: Căn mép phải.<br>• `center`: Căn chính giữa.<br>• `left`: Căn mép trái. | • Đặt `right` khi sửa cột số tiền, số lượng trong bảng biểu để thẳng hàng đơn vị.<br>• Đặt `left` khi sửa văn bản dài, tên công ty, địa chỉ, số hợp đồng.<br>• Đặt `center` cho tiêu đề, mã cột ngắn. |
+| **`-r`, `--roughness`** | Tùy chọn | `1.0` *(Chuẩn)* | **Hệ số mức độ rỗ thớ giấy và hạt mực scan**:<br>• Nhận số thực: `0.0` đến `2.0` (ví dụ: `1.2`, `1.5`, `0.6`).<br>• Hoặc nhận tên mức: `off` (0.0), `low` (0.6), `med` (1.0), `high` (1.4).<br>*(Xem chi tiết bảng quy đổi ở mục 5.4).* | • Đặt `-r high` (hoặc `1.3..1.5`) khi scan tài liệu cũ giấy xơ thô hoặc photocopy.<br>• Đặt `-r low` (hoặc `0.6`) khi bản scan nét mịn, giấy bóng.<br>• Đặt `-r off` (hoặc `0.0`) khi muốn chữ phẳng mịn tuyệt đối không rỗ. |
+| **`--color R G B`** | Tùy chọn | `None` *(Tự hút)* | Màu mực quang phổ (3 số Red Green Blue từ 0-255).<br>• Mặc định: Tự động trích xuất màu mực thực tế của chữ cũ (thường là xám chì `74 75 81`). | Khi muốn đổi màu chữ sang màu mực khác (ví dụ mực xanh `--color 30 50 120` hoặc ép xám đậm `--color 60 60 65`). **Không nên** dùng `0 0 0` đen kịt vì sẽ bị giả tạo. |
+| **`--bg-color R G B`** | Tùy chọn | `None` *(Tự lấy)* | Màu nền giấy (3 số Red Green Blue từ 0-255).<br>• Mặc định: Tự lấy mẫu màu trung bình của dải mép viền quanh hộp `--box`. | Khi vùng xóa nằm trên nền giấy màu đặc biệt (giấy ngả vàng, giấy xám chì) mà mép viền bị dính đường kẻ. |
+| **`--out`** | Tùy chọn | `None` *(Ghi đè)* | Đường dẫn file PDF thành phẩm xuất ra.<br>• Nếu không truyền: **Ghi đè trực tiếp lên file gốc `--pdf`**.<br>• Nếu có truyền: Tạo ra file PDF mới. | Khuyên bạn nên luôn đặt tên file mới (ví dụ: `--out "CCF_DaSua.pdf"`) trong những lần chạy đầu tiên để kiểm tra kết quả trước khi ghi đè. |
+
+---
+
+#### 🚀 3 Phong Cách Chạy Lệnh `replace` Phổ Biến Nhất:
+
+##### 1. Chế độ Siêu Tự Động (Khuyên Dùng Nhất — Ngắn gọn nhất):
+Bạn chỉ cần truyền đúng 3 tham số: `--pdf`, `--box`, `--text`. Script tự động lo từ A đến Z:
+```bash
+python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" --out "KetQua.pdf"
+```
+
+##### 2. Chế độ Tinh Chỉnh Độ Rỗ Nhanh (Thêm cờ `-r`):
+```bash
+# Thêm độ rỗ hạt mực rõ nét hơn (-r 1.3 hoặc -r high):
+python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r high
+
+# Giảm độ rỗ cho nét chữ thanh mảnh (-r 0.6 hoặc -r low):
+python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r low
+
+# Tắt hoàn toàn độ rỗ, chữ phẳng nét mịn (-r off hoặc -r 0.0):
+python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r off
+```
+
+##### 3. Chế độ Xóa Trắng (Bút Xóa Nền Giấy):
+Muốn xóa bỏ một con dấu thừa, chữ ký cũ hoặc ô bị in lỗi mà không muốn viết chữ gì:
+```bash
+python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 1800 2800 350 150 --text ""
+```
+
+---
+
+### 5.3. Lệnh `insert` — Chèn Chữ Mới Vào Tọa Độ Trống (Không Xóa Nền)
+
+Lệnh `insert` được dùng khi trang PDF scan của bạn **đã có sẵn một khoảng trống** (ví dụ: mẫu biểu có sẵn dòng chấm chấm `Thời hạn thực hiện: ....... ngày`, hoặc các ô form chưa được điền số liệu). Điểm khác biệt mấu chốt so với `replace` là lệnh này **không xóa bất kỳ vùng nền nào**, nó chỉ phủ lớp mực mới có độ rỗ scan tự nhiên lên đúng tọa độ bạn chỉ định.
+
+#### 📋 Cú Pháp Tổng Quát Của Lệnh `insert`:
+```bash
+python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [CÁC_THAM_SỐ_TÙY_CHỌN]
+```
+
+#### 🔍 Bảng Giải Thích Chi Tiết TẤT CẢ Các Tham Số Của Lệnh `insert`:
+
+| Tham số | Bắt buộc? | Giá trị mặc định | Giải thích chi tiết & Tác dụng | Khi nào nên chỉnh tay? |
+| :--- | :---: | :---: | :--- | :--- |
+| **`--pdf`** | **BẮT BUỘC** | *Không* | Đường dẫn tới file PDF scan gốc cần chèn chữ. | Luôn phải cung cấp. |
+| **`--text`** | **BẮT BUỘC** | *Không* | Nội dung chữ hoặc số cần chèn vào (ví dụ: `"45"`, `"Nguyễn Văn A"`). | Luôn phải cung cấp. |
+| **`--x`** | **BẮT BUỘC** | *Không* | **Tọa độ hoành độ X (pixel)** để bắt đầu đặt chữ:<br>• Nếu `--align left`: X là vị trí mép bên trái của chữ đầu tiên.<br>• Nếu `--align center`: X là vị trí điểm chính giữa của toàn bộ đoạn chữ.<br>• Nếu `--align right`: X là vị trí mép bên phải của chữ cuối cùng. | Bắt buộc. Xác định qua lệnh `pick` hoặc mở ảnh bằng MS Paint để xem tọa độ. |
+| **`--y`** | **BẮT BUỘC** | *Không* | **Tọa độ tung độ Y (pixel) — ĐÂY LÀ ĐƯỜNG CHÂN CHỮ (BASELINE)**:<br>⚠️ *Lưu ý sống còn:* Đây **không phải** là mép trên của chữ, mà là **đường kẻ mà các con chữ đứng lên trên nó** (tương tự như dòng kẻ ô ly tập viết). | Xem mục bên dưới để biết cách tính `--y` chuẩn xác từng pixel. |
+| **`--font`** | Tùy chọn | `'times.ttf'` | Tên font chữ Windows TrueType (`times.ttf`, `timesbd.ttf`, `timesi.ttf`, `arial.ttf`...). | Đặt `timesbd.ttf` nếu muốn chèn chữ ĐẬM, `timesi.ttf` nếu muốn chèn chữ NGHIÊNG. |
+| **`--size`** | Tùy chọn | `52` | Cỡ font chữ (pt). Mặc định `52` tương đương với chữ văn phòng tiêu chuẩn trên độ phân giải scan 300 DPI. | Tăng giảm tùy theo độ rộng hẹp của khoảng trống (ví dụ `--size 48` hoặc `--size 56`). |
+| **`--align`** | Tùy chọn | `'left'` | Căn lề của đoạn chữ so với điểm `--x`:<br>• `left`: Chữ phát triển sang bên phải điểm X.<br>• `center`: Chữ mở rộng đều sang hai bên điểm X.<br>• `right`: Chữ kết thúc tại điểm X. | • Dùng `center` khi điền vào giữa khoảng trống chấm chấm `......`.<br>• Dùng `left` khi viết tiếp sau một đoạn văn bản có sẵn. |
+| **`-r`, `--roughness`** | Tùy chọn | `1.0` *(Chuẩn)* | Mức độ rỗ của hạt mực scan (`0.0..2.0` hoặc `off`, `low`, `med`, `high`). | Tương tự lệnh `replace`. |
+| **`--color R G B`** | Tùy chọn | `55 52 50` | Màu mực scan quang phổ. Mặc định là xám đen chì tự nhiên của mực in trên giấy. | Có thể tùy biến mã màu mong muốn. |
+| **`--out`** | Tùy chọn | `None` *(Ghi đè)* | Đường dẫn file PDF kết quả xuất ra. | Khuyên dùng đặt file mới để đối chiếu. |
+
+---
+
+#### 🎯 Bí Quyết Xác Định Tọa Độ `--x` Và Đường Chân Chữ `--y` Cho Lệnh `insert`:
+
+1. **Cách tính nhanh tọa độ từ lệnh `pick`:**
+   - Dùng lệnh `pick` khoanh vào một chữ đã có sẵn ở cùng dòng đó.
+   - Bảng phân tích sẽ in ra: `X = ..., Y = ..., Chiều cao H = ...`.
+   - **Công thức tính đường chân chữ Y (Baseline):**
+     $$\text{Y}_{\text{insert}} \approx \text{Y}_{\text{box}} + \text{H}_{\text{box}} - 6 \text{ đến } 10 \text{ px}$$
+   - *Ví dụ:* Nếu chữ cùng hàng có `Y = 1580`, `H = 50` thì bạn chỉ cần đặt `--y 1622` là chữ mới sẽ nằm thẳng tắp trên cùng một dòng kẻ với chữ cũ!
+2. **Ví dụ câu lệnh chèn thực tế:**
+   ```bash
+   # Điền số 45 vào khoảng chấm chấm, căn giữa tại X=820, chân chữ Y=1580:
+   python edit_scanned_pdf.py insert --pdf "CCF_000372_.pdf" --text "45" --x 820 --y 1580 --font times.ttf --size 50 --align center -r 1.1 --out "DaDienSo45.pdf"
+   ```
+
+---
+
+### 5.4. Bảng Tra Cứu Toàn Diện Mức Độ Rỗ (`-r` hoặc `--roughness`)
 
 Cả lệnh `replace` và `insert` đều hỗ trợ tham số `-r` (hoặc `--roughness`) để điều chỉnh mức độ rỗ:
 
 | Cách gõ tham số | Giá trị số quy đổi | Mô tả & Tình huống khuyên dùng |
 | :--- | :---: | :--- |
-| `-r off` hoặc `-r 0.0` | `0.0` | **Tắt rỗ hoàn toàn:** Chữ phẳng nét, vùng xóa phẳng hoàn toàn. Phù hợp tài liệu PDF kỹ thuật số không qua máy scan. |
-| `-r low` hoặc `-r 0.6` | `0.6` | **Rỗ nhẹ / Nét mịn:** Chữ in laser trên giấy mịn văn phòng, tài liệu scan độ phân giải cao còn mới. |
-| `-r med` hoặc `-r 1.0` | `1.0` *(Mặc định)* | **Chuẩn tự nhiên:** Mô phỏng hoàn hảo độ rỗ vi hạt scan văn phòng thông dụng. |
-| `-r high` hoặc `-r 1.4` | `1.4` | **Rỗ đậm / Giấy thô:** Scan từ bản photocopy cũ, máy quét nhiều bụi hạt, giấy xơ xước. |
-| `-r 1.2` / `-r 1.6`... | Tự do `0.0..2.0` | Tùy biến tự do bất kỳ số thực nào bạn muốn. |
+| **`-r off`** hoặc **`-r 0.0`** | `0.0` | **Tắt rỗ hoàn toàn:** Chữ phẳng nét, vùng xóa phẳng hoàn toàn. Phù hợp tài liệu PDF kỹ thuật số không qua máy scan. |
+| **`-r low`** hoặc **`-r 0.6`** | `0.6` | **Rỗ nhẹ / Nét mịn:** Chữ in laser trên giấy mịn văn phòng, tài liệu scan độ phân giải cao còn mới. |
+| **`-r med`** hoặc **`-r 1.0`** | `1.0` *(Mặc định)* | **Chuẩn tự nhiên:** Mô phỏng hoàn hảo độ rỗ vi hạt scan văn phòng thông dụng. |
+| **`-r high`** hoặc **`-r 1.4`** | `1.4` | **Rỗ đậm / Giấy thô:** Scan từ bản photocopy cũ, máy quét nhiều bụi hạt, giấy xơ xước. |
+| **`-r 1.2` / `-r 1.6`...** | Tự do `0.0..2.0` | Tùy biến tự do bất kỳ số thực nào bạn muốn. |
+
+*(Script cũng tự hiểu các từ tiếng Việt: `-r nhe`, `-r chuan`, `-r dam`, `-r nhieu`, `-r khong`).*
 
 ---
 
-### Lệnh 1: `replace` (Thay thế văn bản)
+### 5.5. Các Lệnh Tiện Ích Hỗ Trợ Khác (`preview`, `extract`)
+
+#### Lệnh `preview` (Cắt xem trước tọa độ)
+Giúp xem nhanh vùng cắt để kiểm tra vị trí xem có chạm viền kẻ bảng hay không trước khi thực hiện thay thế:
 ```bash
-python edit_scanned_pdf.py replace --pdf <FILE> --box <X Y W H> --text <NỘI_DUNG> [CÁC_CỜ_TÙY_CHỌN]
-```
-- **Chế độ Tự Động 100% (Khuyên dùng - Ngắn gọn nhất):**
-  Không cần truyền `--font`, `--size`, `--align`, `--color`. Script sẽ tự động trích xuất các thuộc tính và độ rỗ từ chữ cũ trước khi xóa:
-  ```bash
-  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000"
-  ```
-- **Chế độ Tùy Chỉnh Độ Rỗ Cực Nhanh (Thêm cờ `-r`):**
-  ```bash
-  # Tăng độ rỗ lên mức cao (-r high hoặc -r 1.3):
-  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r high
-
-  # Giảm độ rỗ nhẹ mịn (-r low hoặc -r 0.6):
-  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r low
-
-  # Tắt rỗ, viết chữ phẳng hoàn toàn (-r off hoặc -r 0.0):
-  python edit_scanned_pdf.py replace --pdf "CCF_000372_.pdf" --box 2096 1086 260 50 --text "270,750,000" -r off
-  ```
-- **Chế độ Chỉnh tay Chuyên sâu (Khi muốn ép font chữ/màu sắc cụ thể):**
-  - `--font`: Tên file font (`timesbd.ttf`, `times.ttf`, `timesi.ttf`, `arial.ttf`, `GOTHIC.TTF`...).
-  - `--size`: Cỡ font số nguyên (ví dụ: `52`, `54`).
-  - `--align`: Căn lề: `right` (số tiền), `center` (tiêu đề), `left` (đoạn văn).
-  - `-r`, `--roughness`: Mức độ rỗ thớ giấy và hạt mực scan (`0.0..2.0` hoặc `off`, `low`, `med`, `high`).
-  - `--color R G B`: Ép màu mực (ví dụ: `--color 74 75 81`).
-  - `--bg-color R G B`: Ép màu giấy nền (ví dụ: `--bg-color 254 254 254`).
-  - `--out`: Tên file PDF xuất ra (nếu không truyền sẽ ghi đè file gốc).
-
----
-
-### Lệnh 2: `insert` (Chèn chữ/số vào tọa độ trống)
-Dùng khi tài liệu có sẵn khoảng trống (chấm lửng `...` hoặc ô chưa điền):
-```bash
-python edit_scanned_pdf.py insert --pdf <FILE> --text <CHỮ> --x <X> --y <Y> [--font <FONT>] [--size <SIZE>] [--align <left|center|right>] [-r <MỨC_ĐỘ_RỖ>]
-```
-Ví dụ:
-```bash
-python edit_scanned_pdf.py insert --pdf "CCF_000372_.pdf" --text "45" --x 820 --y 1580 -r 1.2
+python edit_scanned_pdf.py preview --pdf "CCF_000372_.pdf" --crop 2096 1086 260 50 --out "preview.png"
 ```
 
----
-
-### Lệnh 3: `preview` (Cắt xem trước tọa độ)
-Giúp xem nhanh vùng cắt để kiểm tra vị trí xem có chạm viền không:
+#### Lệnh `extract` (Xuất trang scan ra ảnh gốc)
+Xuất toàn bộ trang scan ra ảnh chất lượng cao để mở trong MS Paint đo tọa độ thủ công:
 ```bash
-python edit_scanned_pdf.py preview --pdf <FILE> --crop <X Y W H> --out "preview.png"
-```
-
----
-
-### Lệnh 4: `extract` (Xuất trang scan ra ảnh)
-```bash
-python edit_scanned_pdf.py extract --pdf <FILE> --page 0 --out "trang_scan.jpg"
+python edit_scanned_pdf.py extract --pdf "CCF_000372_.pdf" --page 0 --out "trang_scan.jpg"
 ```
 
 ---
