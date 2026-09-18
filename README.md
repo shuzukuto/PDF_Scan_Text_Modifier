@@ -495,34 +495,107 @@ Dưới đây là tổng hợp tất cả các tác vụ phổ biến nhất tr�
 ---
 
 ### Ví dụ 10: Chạy script Python tự động sửa hàng loạt nhiều ô
-- **Tình huống:** Bạn cần sửa đồng thời 5 ô trên cùng một trang: Đơn giá, Thành tiền, Thuế VAT và Tổng tiền, có thể tùy chọn mức độ rỗ `roughness` cho từng ô hoặc cho toàn bộ tài liệu, sau đó lưu lại file mới.
-- Tạo một file script ngắn (ví dụ `sua_hang_loat.py`):
-  ```python
-  from edit_scanned_pdf import ScannedPdfEditor
 
-  # Mở file PDF scan (có thể đặt mức độ rỗ mặc định cho cả tài liệu, vd: default_roughness=1.1 hoặc "med")
-  editor = ScannedPdfEditor("CCF_000372_.pdf", page_num=0, default_roughness=1.0)
+- **Tình huống:** Bạn cần sửa đồng thời 5 vị trí trên cùng một trang scan: Số lượng, Thành tiền, Thuế VAT, Tổng tiền, hoặc điền thêm ngày tháng, chỉ với **1 lần bấm chạy duy nhất** thay vì phải gõ lệnh terminal 5 lần riêng biệt.
+- **Dự án đã tạo sẵn file:** File script mẫu [`sua_hang_loat.py`](file:///f:/TempFiles/New%20folder%20(9)/sua_hang_loat.py) đã có sẵn ngay trong thư mục mã nguồn.
 
-  # 1. Sửa Số lượng (dòng 1) - Tự động nhận diện chữ thường
-  editor.replace_region(box=(1615, 992, 135, 55), new_text="4,750")
+#### ⚠️ HƯỚNG DẪN QUAN TRỌNG VỀ VỊ TRÍ LƯU FILE `sua_hang_loat.py`:
+- File `sua_hang_loat.py` **BẮT BUỘC PHẢI ĐẶT CÙNG THƯ MỤC** với file `edit_scanned_pdf.py` và file PDF cần sửa.
+- **Lý do:** Lệnh đầu tiên trong script là `from edit_scanned_pdf import ScannedPdfEditor` sẽ nạp bộ não xử lý thị giác máy tính từ file `edit_scanned_pdf.py`. Nếu 2 file này nằm ở 2 thư mục khác nhau, Python sẽ báo lỗi `ModuleNotFoundError: No module named 'edit_scanned_pdf'`.
 
-  # 2. Sửa Thành tiền (dòng 1) - Tự động nhận diện chữ thường
-  editor.replace_region(box=(2096, 996, 260, 53), new_text="270,750,000")
+```text
+📁 Thư mục làm việc của bạn (ví dụ F:\TempFiles\New folder (9)\):
+   ├── edit_scanned_pdf.py             <-- Script công cụ chính (BẮT BUỘC)
+   ├── sua_hang_loat.py                <-- Script sửa hàng loạt (CÙNG THƯ MỤC)
+   ├── requirements.txt                <-- Danh sách thư viện cài đặt
+   ├── CCF_000372_.pdf                 <-- File PDF scan gốc cần sửa
+   └── CCF_000372_DaCapNhatToanBo.pdf  <-- File PDF kết quả sinh ra sau khi chạy
+```
 
-  # 3. Sửa Cộng tiền hàng (dòng 2) - Tự động nhận diện chữ ĐẬM (Bold), tùy chọn độ rỗ 1.2
-  editor.replace_region(box=(2096, 1086, 260, 50), new_text="270,750,000", roughness=1.2)
+#### 📝 Nội dung đầy đủ của file `sua_hang_loat.py` (Bạn có thể mở bằng Notepad để sửa tùy ý):
+```python
+# -*- coding: utf-8 -*-
+"""
+SCRIPT SỬA HÀNG LOẠT VĂN BẢN TRÊN FILE PDF SCAN (sua_hang_loat.py)
+"""
+import os
+import sys
 
-  # 4. Sửa Thuế GTGT 8% (dòng 3) - Tự động nhận diện chữ ĐẬM (Bold), dùng tên mức "high"
-  editor.replace_region(box=(2096, 1170, 260, 50), new_text="21,660,000", roughness="high")
+# Import bộ công cụ chỉnh sửa từ file edit_scanned_pdf.py (cùng thư mục)
+try:
+    from edit_scanned_pdf import ScannedPdfEditor
+except ImportError:
+    print("[LỖI] Không tìm thấy file 'edit_scanned_pdf.py' trong cùng thư mục!")
+    print("      Vui lòng đảm bảo 'sua_hang_loat.py' và 'edit_scanned_pdf.py' nằm chung một folder.")
+    sys.exit(1)
 
-  # 5. Sửa Tổng cộng thanh toán (dòng 4) - Tự động nhận diện chữ ĐẬM (Bold)
-  editor.replace_region(box=(2096, 1260, 260, 50), new_text="292,410,000")
 
-  # Lưu kết quả ra file mới
-  editor.save("CCF_000372_DaCapNhatToanBo.pdf")
-  print("[OK] Đã cập nhật xong toàn bộ bảng biểu!")
-  ```
-  Chạy lệnh: `python sua_hang_loat.py`
+def main():
+    # 1. CẤU HÌNH TÊN FILE VÀ THÔNG SỐ CHUNG
+    input_pdf = "CCF_000372_.pdf"                 # File PDF gốc cần sửa
+    output_pdf = "CCF_000372_DaCapNhatToanBo.pdf"  # File kết quả xuất ra
+    page_number = 0                               # Trang cần sửa (0 là trang 1, 1 là trang 2...)
+    default_roughness = 1.0                       # Độ rỗ mặc định (1.0 là chuẩn tự nhiên)
+
+    if not os.path.exists(input_pdf):
+        print(f"[LỖI] Không tìm thấy file '{input_pdf}'! Hãy kiểm tra lại tên file.")
+        return
+
+    print("=" * 76)
+    print(f"[*] BẮT ĐẦU CẬP NHẬT HÀNG LOẠT FILE SCAN: {input_pdf}")
+    print(f"[*] File kết quả xuất ra                 : {output_pdf}")
+    print("=" * 76)
+
+    # Khởi tạo đối tượng chỉnh sửa
+    editor = ScannedPdfEditor(input_pdf, page_num=page_number, default_roughness=default_roughness)
+
+    # 2. DANH SÁCH CÁC VỊ TRÍ CẦN SỬA (Lấy tọa độ từ lệnh pick)
+    # [Vị trí 1] Sửa Số lượng (dòng 1) - Tự động nhận diện chữ thường
+    print("\n--- [1/5] Đang sửa Số lượng (Dòng 1)... ---")
+    editor.replace_region(box=(1615, 992, 135, 55), new_text="4,750")
+
+    # [Vị trí 2] Sửa Thành tiền (dòng 1) - Tự động nhận diện chữ thường
+    print("\n--- [2/5] Đang sửa Thành tiền (Dòng 1)... ---")
+    editor.replace_region(box=(2096, 996, 260, 53), new_text="270,750,000")
+
+    # [Vị trí 3] Sửa Cộng tiền hàng (dòng 2) - Tự động nhận diện chữ ĐẬM (Bold), chỉnh rỗ 1.2
+    print("\n--- [3/5] Đang sửa Cộng tiền hàng (Chữ Đậm)... ---")
+    editor.replace_region(box=(2096, 1086, 260, 50), new_text="270,750,000", roughness=1.2)
+
+    # [Vị trí 4] Sửa Thuế GTGT 8% (dòng 3) - Tự động nhận diện chữ ĐẬM (Bold), chỉnh rỗ 'high'
+    print("\n--- [4/5] Đang sửa Thuế GTGT 8% (Chữ Đậm)... ---")
+    editor.replace_region(box=(2096, 1170, 260, 50), new_text="21,660,000", roughness="high")
+
+    # [Vị trí 5] Sửa Tổng cộng thanh toán (dòng 4) - Tự động nhận diện chữ ĐẬM (Bold)
+    print("\n--- [5/5] Đang sửa Tổng cộng thanh toán (Chữ Đậm)... ---")
+    editor.replace_region(box=(2096, 1260, 260, 50), new_text="292,410,000")
+
+    # 3. CÁC TÍNH NĂNG NÂNG CAO KHÁC (Tùy chọn mở rộng)
+    # • Nếu muốn chèn thêm chữ vào dòng chấm chấm ... (không xóa nền):
+    # editor.insert_text(text="45", x=820, y=1580, font_name="times.ttf", size=50, align="center")
+
+    # • Nếu muốn xóa trắng một con dấu/chữ thừa (Whiteout):
+    # editor.replace_region(box=(1800, 2800, 350, 150), new_text="")
+
+    # 4. LƯU FILE KẾT QUẢ
+    print("\n" + "=" * 76)
+    print(f"[*] Đang lưu file PDF kết quả vào: {output_pdf}...")
+    editor.save(output_pdf)
+    print(f"[THÀNH CÔNG] ĐÃ HOÀN TẤT CẬP NHẬT TOÀN BỘ CÁC VỊ TRÍ!")
+    print(f"👉 File mới đã sẵn sàng: {output_pdf}")
+    print("=" * 76 + "\n")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+#### ▶️ Cách Chạy:
+Mở cửa sổ dòng lệnh (cmd/powershell) tại thư mục chứa file và gõ:
+```bash
+python sua_hang_loat.py
+```
+Toàn bộ các ô bảng biểu sẽ được tự động cập nhật đồng loạt chỉ trong vài giây!
 
 ---
 
