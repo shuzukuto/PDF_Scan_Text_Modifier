@@ -550,32 +550,67 @@ def main():
     editor = ScannedPdfEditor(input_pdf, page_num=page_number, default_roughness=default_roughness)
 
     # 2. DANH SÁCH CÁC VỊ TRÍ CẦN SỬA (Lấy tọa độ từ lệnh pick)
-    # [Vị trí 1] Sửa Số lượng (dòng 1) - Tự động nhận diện chữ thường
+    # [Vị trí 1] Sửa Số lượng (dòng 1) - Dùng "auto" toàn diện: tự nhận diện chữ thường, tự căn lề số
     print("\n--- [1/5] Đang sửa Số lượng (Dòng 1)... ---")
-    editor.replace_region(box=(1615, 992, 135, 55), new_text="4,750")
+    editor.replace_region(
+        box=(1615, 992, 135, 55),    # Tọa độ (X, Y, Width, Height)
+        new_text="4,750",             # Nội dung mới
+        font_name="auto",             # Font: "auto" (tự nhận diện), hoặc ép: "times.ttf"
+        font_size=0,                  # Cỡ chữ: 0 (tự đo theo chữ cũ), hoặc ép số: 52
+        align="auto",                 # Căn lề: "auto" (số tự căn phải), hoặc "right", "center", "left"
+        roughness=1.0                 # Độ rỗ thớ giấy và mực scan (1.0 là chuẩn tự nhiên)
+    )
 
-    # [Vị trí 2] Sửa Thành tiền (dòng 1) - Tự động nhận diện chữ thường
+    # [Vị trí 2] Sửa Thành tiền (dòng 1) - Chỉ định rõ chữ thường times.ttf, cỡ 52, căn phải
     print("\n--- [2/5] Đang sửa Thành tiền (Dòng 1)... ---")
-    editor.replace_region(box=(2096, 996, 260, 53), new_text="270,750,000")
+    editor.replace_region(
+        box=(2096, 996, 260, 53),
+        new_text="270,750,000",
+        font_name="times.ttf",        # Chỉ định font chữ thường
+        font_size=52,                 # Chỉ định cỡ font
+        align="right",                # Căn lề phải
+        roughness=1.0                 # Độ rỗ chuẩn
+    )
 
-    # [Vị trí 3] Sửa Cộng tiền hàng (dòng 2) - Tự động nhận diện chữ ĐẬM (Bold), chỉnh rỗ 1.2
+    # [Vị trí 3] Sửa Cộng tiền hàng (dòng 2) - Chỉ định chữ ĐẬM timesbd.ttf, cỡ 52, căn phải, rỗ 1.2
     print("\n--- [3/5] Đang sửa Cộng tiền hàng (Chữ Đậm)... ---")
-    editor.replace_region(box=(2096, 1086, 260, 50), new_text="270,750,000", roughness=1.2)
+    editor.replace_region(
+        box=(2096, 1086, 260, 50),
+        new_text="270,750,000",
+        font_name="timesbd.ttf",      # Chỉ định font chữ ĐẬM (Times Bold)
+        font_size=52,                 # Cỡ font
+        align="right",                # Căn lề phải
+        roughness=1.2                 # Tùy chọn tăng nhẹ độ rỗ scan
+    )
 
-    # [Vị trí 4] Sửa Thuế GTGT 8% (dòng 3) - Tự động nhận diện chữ ĐẬM (Bold), chỉnh rỗ 'high'
+    # [Vị trí 4] Sửa Thuế GTGT 8% (dòng 3) - Tự động nhận diện chữ ĐẬM, căn phải, rỗ 'high'
     print("\n--- [4/5] Đang sửa Thuế GTGT 8% (Chữ Đậm)... ---")
-    editor.replace_region(box=(2096, 1170, 260, 50), new_text="21,660,000", roughness="high")
+    editor.replace_region(
+        box=(2096, 1170, 260, 50),
+        new_text="21,660,000",
+        font_name="auto",             # Tự động phát hiện chữ ĐẬM
+        font_size=0,                  # Tự động đo cỡ chữ
+        align="right",                # Căn lề phải
+        roughness="high"              # Mức độ rỗ đậm (tương đương 1.4)
+    )
 
-    # [Vị trí 5] Sửa Tổng cộng thanh toán (dòng 4) - Tự động nhận diện chữ ĐẬM (Bold)
+    # [Vị trí 5] Sửa Tổng cộng thanh toán (dòng 4) - Chỉ định chữ ĐẬM timesbd.ttf, cỡ 50, căn phải
     print("\n--- [5/5] Đang sửa Tổng cộng thanh toán (Chữ Đậm)... ---")
-    editor.replace_region(box=(2096, 1260, 260, 50), new_text="292,410,000")
+    editor.replace_region(
+        box=(2096, 1260, 260, 50),
+        new_text="292,410,000",
+        font_name="timesbd.ttf",      # Font chữ ĐẬM
+        font_size=50,                 # Cỡ font
+        align="right",                # Căn lề phải
+        roughness=1.0                 # Độ rỗ chuẩn
+    )
 
     # 3. CÁC TÍNH NĂNG NÂNG CAO KHÁC (Tùy chọn mở rộng)
     # • Nếu muốn chèn thêm chữ vào dòng chấm chấm ... (không xóa nền):
-    # editor.insert_text(text="45", x=820, y=1580, font_name="times.ttf", size=50, align="center")
+    # editor.insert_text(text="45", x=820, y=1580, font_name="times.ttf", size=50, align="center", roughness=1.0)
 
     # • Nếu muốn xóa trắng một con dấu/chữ thừa (Whiteout):
-    # editor.replace_region(box=(1800, 2800, 350, 150), new_text="")
+    # editor.replace_region(box=(1800, 2800, 350, 150), new_text="", roughness=1.0)
 
     # 4. LƯU FILE KẾT QUẢ
     print("\n" + "=" * 76)
