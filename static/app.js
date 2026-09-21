@@ -703,6 +703,28 @@
       .replace(/'/g, '&#039;');
   }
 
+  function rgbToHex(rgb) {
+    if (!rgb || !Array.isArray(rgb) || rgb.length < 3) return '#373432';
+    return '#' + rgb.slice(0, 3).map(x => {
+      const hex = Math.max(0, Math.min(255, Math.round(x))).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('').toUpperCase();
+  }
+
+  function hexToRgb(hex) {
+    if (!hex) return [55, 52, 50];
+    const cleaned = hex.replace('#', '').trim();
+    if (cleaned.length === 3) {
+      const r = parseInt(cleaned[0] + cleaned[0], 16);
+      const g = parseInt(cleaned[1] + cleaned[1], 16);
+      const b = parseInt(cleaned[2] + cleaned[2], 16);
+      return [r, g, b];
+    }
+    const num = parseInt(cleaned, 16);
+    if (isNaN(num)) return [55, 52, 50];
+    return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+  }
+
   function cancelStudioEditMode() {
     state.editingQueueItemId = null;
     dom.btnAddQueue.innerHTML = `
@@ -732,14 +754,6 @@
       dom.inputFontSize.value = item.font_size || 52;
       setAlign(item.align || 'auto');
       setRoughness(item.roughness !== undefined ? item.roughness : 1.0);
-      
-      const rgbToHex = (rgb) => {
-        if (!rgb || !Array.isArray(rgb) || rgb.length < 3) return '#373432';
-        return '#' + rgb.map(x => {
-          const hex = Math.max(0, Math.min(255, Math.round(x))).toString(16);
-          return hex.length === 1 ? '0' + hex : hex;
-        }).join('').toUpperCase();
-      };
       
       if (item.color) {
         const inkH = rgbToHex(item.color);
@@ -786,11 +800,6 @@
     const fontSize = parseInt(dom.inputFontSize.value, 10) || 52;
     const align = getSelectedAlign();
     const roughness = parseFloat(dom.sliderRoughness.value) || 1.0;
-    
-    const hexToRgb = (hex) => {
-      const num = parseInt(hex.replace('#', ''), 16);
-      return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
-    };
 
     // Trường hợp đang cập nhật một mục có sẵn từ Studio
     if (state.editingQueueItemId) {
@@ -857,6 +866,9 @@
       card.className = `queue-card ${item.enabled ? '' : 'disabled'}`;
       card.dataset.id = item.id;
       
+      const inkHex = rgbToHex(item.color || [55, 52, 50]);
+      const bgHex = rgbToHex(item.bg_color || [254, 254, 254]);
+      
       card.innerHTML = `
         <div class="queue-card-top">
           <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; min-width: 0;">
@@ -885,6 +897,14 @@
           <span>${item.font_size}pt</span>
           <span>Lề:${item.align}</span>
           <span class="text-cyan">R:${item.roughness}</span>
+          <span style="display:inline-flex; align-items:center; gap:3px;" title="Màu mực: ${inkHex}">
+            <span style="display:inline-block; width:9px; height:9px; border-radius:2px; background-color:${inkHex}; border:1px solid rgba(255,255,255,0.25);"></span>
+            <span>${inkHex}</span>
+          </span>
+          <span style="display:inline-flex; align-items:center; gap:3px;" title="Màu nền giấy: ${bgHex}">
+            <span style="display:inline-block; width:9px; height:9px; border-radius:2px; background-color:${bgHex}; border:1px solid rgba(255,255,255,0.25);"></span>
+            <span>${bgHex}</span>
+          </span>
         </div>
 
         <!-- Inline Edit Panel -->
@@ -931,6 +951,23 @@
               <input type="number" step="0.1" class="form-input form-input-sm edit-inline-roughness font-mono" value="${item.roughness}" min="0.0" max="2.0">
             </div>
           </div>
+          <!-- BỔ SUNG THAY ĐỔI MÃ MÀU TRỰC TIẾP -->
+          <div class="form-row-sm">
+            <div class="form-group-sm">
+              <label class="form-label-xs">Màu mực (Ink Color):</label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="color" class="edit-inline-picker-ink" value="${inkHex}" style="width: 28px; height: 28px; padding: 1px; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; background: transparent;">
+                <input type="text" class="form-input form-input-sm edit-inline-hex-ink font-mono" value="${inkHex}" maxlength="7" style="flex: 1;">
+              </div>
+            </div>
+            <div class="form-group-sm">
+              <label class="form-label-xs">Màu nền giấy (Paper BG):</label>
+              <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="color" class="edit-inline-picker-bg" value="${bgHex}" style="width: 28px; height: 28px; padding: 1px; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; background: transparent;">
+                <input type="text" class="form-input form-input-sm edit-inline-hex-bg font-mono" value="${bgHex}" maxlength="7" style="flex: 1;">
+              </div>
+            </div>
+          </div>
           <div class="form-group-sm">
             <label class="form-label-xs">Tọa độ Box [X, Y, W, H]:</label>
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
@@ -960,6 +997,30 @@
       const btnCancelInline = card.querySelector('.btn-cancel-inline');
       const btnOpenStudio = card.querySelector('.btn-open-studio');
       
+      // Đồng bộ hai chiều cho bảng chọn màu mực và màu nền giấy
+      const pickerInk = card.querySelector('.edit-inline-picker-ink');
+      const hexInk = card.querySelector('.edit-inline-hex-ink');
+      const pickerBg = card.querySelector('.edit-inline-picker-bg');
+      const hexBg = card.querySelector('.edit-inline-hex-bg');
+
+      pickerInk.addEventListener('input', (e) => {
+        hexInk.value = e.target.value.toUpperCase();
+      });
+      hexInk.addEventListener('input', (e) => {
+        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+          pickerInk.value = e.target.value;
+        }
+      });
+
+      pickerBg.addEventListener('input', (e) => {
+        hexBg.value = e.target.value.toUpperCase();
+      });
+      hexBg.addEventListener('input', (e) => {
+        if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+          pickerBg.value = e.target.value;
+        }
+      });
+      
       // Bật/tắt form sửa trực tiếp
       btnEdit.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -984,6 +1045,8 @@
         const by = parseInt(card.querySelector('.edit-box-y').value, 10) || item.box[1];
         const bw = parseInt(card.querySelector('.edit-box-w').value, 10) || item.box[2];
         const bh = parseInt(card.querySelector('.edit-box-h').value, 10) || item.box[3];
+        const inlineInk = hexToRgb(hexInk.value || pickerInk.value);
+        const inlineBg = hexToRgb(hexBg.value || pickerBg.value);
         
         item.text = inlineText;
         item.font_name = inlineFont;
@@ -991,6 +1054,8 @@
         item.align = inlineAlign;
         item.roughness = isNaN(inlineRoughness) ? item.roughness : inlineRoughness;
         item.box = [bx, by, bw, bh];
+        item.color = inlineInk;
+        item.bg_color = inlineBg;
         item.description = `Trang ${item.page + 1}: ${item.action === 'replace' ? 'Thay' : 'Chèn'} "${item.text || '[Xóa]'}"`;
         
         // Cập nhật lại ROI trên canvas nếu đang xem đúng trang
