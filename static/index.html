@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF Scan Text Modifier Studio — Chỉnh Sửa Văn Bản PDF Scan Chuyên Nghiệp</title>
+  <meta name="description" content="Giao diện Web Studio chỉnh sửa tài liệu PDF scan: bóc tách thuộc tính font, màu mực, baseline Y, tái tạo độ rỗ thớ giấy scan chân thực.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=1.0.1">
+</head>
+<body>
+  <div id="app" class="app-layout">
+    <!-- TOP NAVBAR -->
+    <header class="top-nav" role="banner">
+      <div class="nav-left">
+        <div class="brand">
+          <div class="brand-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="22" y1="12" x2="18" y2="12"></line>
+              <line x1="6" y1="12" x2="2" y2="12"></line>
+              <line x1="12" y1="6" x2="12" y2="2"></line>
+              <line x1="12" y1="22" x2="12" y2="18"></line>
+              <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">ScanModifier</span>
+            <span class="brand-badge">STUDIO</span>
+          </div>
+        </div>
+
+        <div class="doc-selector-wrap">
+          <label for="doc-select" class="sr-only">Chọn tài liệu PDF</label>
+          <div class="custom-select">
+            <select id="doc-select" title="Chọn file PDF cần chỉnh sửa">
+              <option value="">Đang tải danh sách tài liệu...</option>
+            </select>
+            <svg class="select-chevron" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+
+          <button id="btn-upload-trigger" class="btn btn-secondary btn-sm" title="Tải file PDF mới từ máy tính">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Tải lên PDF</span>
+          </button>
+          <input type="file" id="file-uploader" accept=".pdf" style="display: none;">
+        </div>
+      </div>
+
+      <div class="nav-center">
+        <!-- CANVAS TOOLBAR -->
+        <div class="toolbar-group" role="toolbar" aria-label="Công cụ chỉnh sửa">
+          <button id="tool-select" class="tool-btn active" title="Công cụ Chọn vùng [V]" aria-pressed="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M5 3l14 9-7 2-3 7L5 3z"></path>
+            </svg>
+            <span class="tool-tip">Chọn vùng (V)</span>
+          </button>
+
+          <button id="tool-hand" class="tool-btn" title="Công cụ Kéo trang / Pan [H]" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M18 11V6a2 2 0 0 0-4 0v5"></path>
+              <path d="M14 10V4a2 2 0 0 0-4 0v7"></path>
+              <path d="M10 10.5V6a2 2 0 0 0-4 0v8"></path>
+              <path d="M18 8a2 2 0 0 1 4 4v4a8 8 0 0 1-16 0v-2"></path>
+            </svg>
+            <span class="tool-tip">Kéo trang (H / Space)</span>
+          </button>
+
+          <button id="tool-loupe" class="tool-btn" title="Kính lúp phóng đại hạt mực [M]" aria-pressed="false">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+            <span class="tool-tip">Kính lúp (M)</span>
+          </button>
+
+          <div class="toolbar-divider"></div>
+
+          <!-- ZOOM CONTROLS -->
+          <div class="zoom-controls">
+            <button id="btn-zoom-out" class="icon-btn" title="Thu nhỏ (-)">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <button id="btn-zoom-level" class="zoom-display" title="Nhấn để về kích thước 100%">100%</button>
+            <button id="btn-zoom-in" class="icon-btn" title="Phóng to (+)">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+            <button id="btn-zoom-fit" class="icon-btn" title="Vừa khít cửa sổ (Ctrl+0)">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-right">
+        <!-- THEME TOGGLE -->
+        <button id="btn-theme-toggle" class="icon-btn" title="Chuyển chế độ Sáng / Tối">
+          <svg id="icon-sun" class="theme-icon" viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" stroke-width="2" fill="none">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="icon-moon" class="theme-icon hidden" viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- SHORTCUTS DIALOG TRIGGER -->
+        <button id="btn-shortcuts-trigger" class="icon-btn" title="Phím tắt">
+          <svg viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" stroke-width="2" fill="none">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+            <line x1="6" y1="8" x2="6.01" y2="8"></line>
+            <line x1="10" y1="8" x2="10.01" y2="8"></line>
+            <line x1="14" y1="8" x2="14.01" y2="8"></line>
+            <line x1="18" y1="8" x2="18.01" y2="8"></line>
+            <line x1="8" y1="16" x2="16" y2="16"></line>
+          </svg>
+        </button>
+
+        <!-- PRIMARY EXPORT CTA -->
+        <button id="btn-export-pdf" class="btn btn-primary" title="Áp dụng toàn bộ sửa đổi và xuất file PDF mới">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Xuất PDF</span>
+          <span id="badge-queue-count" class="badge">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN BODY WORKSPACE -->
+    <div class="workspace">
+      <!-- LEFT SIDEBAR: PAGES & THUMBNAILS -->
+      <aside class="sidebar-pages" id="sidebar-pages">
+        <div class="sidebar-header">
+          <span class="sidebar-title">Trang tài liệu</span>
+          <span id="page-count-badge" class="badge badge-muted">0 trang</span>
+        </div>
+
+        <div id="pages-list" class="pages-thumbnail-list">
+          <!-- Dynamically populated page thumbnails -->
+          <div class="sidebar-empty">Chọn một file PDF để xem các trang</div>
+        </div>
+
+        <div class="doc-meta-card" id="doc-meta-card" style="display: none;">
+          <div class="meta-row">
+            <span class="meta-label">Độ phân giải:</span>
+            <span id="meta-resolution" class="meta-val font-mono">--</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-label">Kích thước file:</span>
+            <span id="meta-filesize" class="meta-val font-mono">--</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER: INTERACTIVE CANVAS VIEWPORT -->
+      <main class="canvas-viewport" id="canvas-viewport">
+        <div class="canvas-stage" id="canvas-stage">
+          <canvas id="pdf-canvas"></canvas>
+        </div>
+
+        <!-- INTERACTIVE SELECTION BOX OVERLAY (VIEWPORT-RELATIVE, PIXEL-PERFECT VISIBILITY) -->
+        <div id="selection-box" class="selection-box hidden">
+          <!-- Coordinates HUD -->
+          <div class="roi-hud" id="roi-hud">
+            <span id="hud-coords" class="hud-text font-mono">X: 0, Y: 0 | 0 × 0 px</span>
+          </div>
+
+          <!-- Golden Baseline Guide -->
+          <div id="baseline-guide" class="baseline-guide hidden" title="Đường chân chữ Baseline Y">
+            <span class="baseline-label font-mono">Y: --</span>
+          </div>
+
+          <!-- 8 Resizing Handles -->
+          <div class="handle handle-nw" data-handle="nw"></div>
+          <div class="handle handle-n" data-handle="n"></div>
+          <div class="handle handle-ne" data-handle="ne"></div>
+          <div class="handle handle-e" data-handle="e"></div>
+          <div class="handle handle-se" data-handle="se"></div>
+          <div class="handle handle-s" data-handle="s"></div>
+          <div class="handle handle-sw" data-handle="sw"></div>
+          <div class="handle handle-w" data-handle="w"></div>
+        </div>
+
+        <!-- MAGNIFIER LOUPE -->
+        <div id="loupe-lens" class="loupe-lens hidden">
+          <canvas id="loupe-canvas" width="160" height="160"></canvas>
+          <div class="loupe-crosshair"></div>
+          <div class="loupe-badge font-mono" id="loupe-badge">3x</div>
+        </div>
+
+        <!-- EMPTY STATE DRAG & DROP -->
+        <div id="canvas-empty-state" class="canvas-empty-state">
+          <div class="empty-state-box">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <h3>Kéo thả file PDF vào đây hoặc chọn ở trên</h3>
+            <p>Tự động tải trang scan, hỗ trợ kéo chọn vùng tương tác pixel-perfect</p>
+            <button id="btn-empty-upload" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Chọn file PDF từ máy tính</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- FLOATING FAST ACTION BAR OVER CANVAS -->
+        <div id="canvas-floating-bar" class="canvas-floating-bar hidden">
+          <span class="bar-label font-mono" id="float-roi-info">[0, 0, 0, 0]</span>
+          <button id="btn-quick-analyze" class="btn btn-sm btn-primary">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span>Bóc tách thuộc tính</span>
+          </button>
+          <button id="btn-quick-replace" class="btn btn-sm btn-secondary">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span>Sửa vùng này</span>
+          </button>
+          <button id="btn-quick-clear" class="btn btn-sm icon-btn" title="Hủy vùng chọn (Esc)">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL: INSPECTOR & STUDIO -->
+      <aside class="panel-inspector" id="panel-inspector">
+        <!-- TABS HEADER -->
+        <nav class="inspector-tabs" role="tablist">
+          <button class="tab-item active" id="tab-btn-inspect" role="tab" aria-selected="true" aria-controls="tab-content-inspect">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            <span>Bóc tách</span>
+          </button>
+          <button class="tab-item" id="tab-btn-edit" role="tab" aria-selected="false" aria-controls="tab-content-edit">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span>Bộ sửa chữ</span>
+          </button>
+          <button class="tab-item" id="tab-btn-queue" role="tab" aria-selected="false" aria-controls="tab-content-queue">
+            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+            <span>Hàng đợi</span>
+            <span id="tab-badge-queue" class="badge badge-subtle">0</span>
+          </button>
+        </nav>
+
+        <!-- TAB 1: BÓC TÁCH (SMART INSPECTOR) -->
+        <div id="tab-content-inspect" class="tab-pane active" role="tabpanel">
+          <div class="panel-section">
+            <div class="section-title-wrap">
+              <h3 class="section-title">VÙNG ĐANG CHỌN (ROI)</h3>
+              <button id="btn-reanalyze" class="btn btn-ghost btn-xs" title="Phân tích lại">
+                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Quét lại</span>
+              </button>
+            </div>
+
+            <!-- CROP PREVIEW BOX -->
+            <div class="crop-preview-box">
+              <div id="crop-preview-container" class="crop-img-container">
+                <span class="crop-placeholder">Kéo chuột trên trang PDF để chọn vùng cần bóc tách</span>
+              </div>
+              <div class="crop-hud-bar">
+                <span id="inspect-coords-box" class="font-mono">Chưa chọn vùng</span>
+                <span id="inspect-baseline-hud" class="font-mono text-amber">Baseline Y: --</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TYPOGRAPHY CARD -->
+          <div class="panel-section">
+            <h3 class="section-title">HÌNH THÁI VĂN BẢN (TYPOGRAPHY)</h3>
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-label">Kiểu dáng</span>
+                <span id="inspect-style-desc" class="metric-value">--</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Cỡ chữ</span>
+                <span id="inspect-font-size" class="metric-value font-mono">-- pt</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Độ dày nét</span>
+                <span id="inspect-stroke" class="metric-value font-mono">-- px</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Mật độ mực</span>
+                <span id="inspect-density" class="metric-value font-mono">--%</span>
+              </div>
+            </div>
+
+            <div class="card-detail">
+              <div class="detail-row">
+                <span class="detail-label">Font đề xuất:</span>
+                <span id="inspect-font-file" class="detail-val font-mono">--</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Font thay thế:</span>
+                <span id="inspect-font-alt" class="detail-val text-muted">--</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Gợi ý căn lề:</span>
+                <span id="inspect-align-rec" class="detail-val">--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- COLOR & GRAIN CARD -->
+          <div class="panel-section">
+            <h3 class="section-title">MÀU SẮC & THỚ GIẤY (COLOR & TEXTURE)</h3>
+            <div class="color-sample-grid">
+              <div class="color-item">
+                <div class="color-swatch-wrap">
+                  <div id="swatch-ink" class="color-swatch" style="background-color: #373432;"></div>
+                  <div class="color-info">
+                    <span class="color-title">Mực in (Ink)</span>
+                    <span id="inspect-ink-hex" class="color-hex font-mono">#373432</span>
+                  </div>
+                </div>
+                <div class="color-metric">
+                  <span class="metric-sublabel">Độ rỗ hạt mực:</span>
+                  <span id="inspect-ink-std" class="font-mono text-cyan">std ~28.0</span>
+                </div>
+              </div>
+
+              <div class="color-item">
+                <div class="color-swatch-wrap">
+                  <div id="swatch-bg" class="color-swatch" style="background-color: #FEFEFE; border: 1px solid var(--border-color);"></div>
+                  <div class="color-info">
+                    <span class="color-title">Giấy nền (Paper)</span>
+                    <span id="inspect-bg-hex" class="color-hex font-mono">#FEFEFE</span>
+                  </div>
+                </div>
+                <div class="color-metric">
+                  <span class="metric-sublabel">Nhiễu thớ giấy:</span>
+                  <span id="inspect-bg-std" class="font-mono text-emerald">std ~1.85</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- PRIMARY LOAD ACTION -->
+            <button id="btn-load-to-edit" class="btn btn-primary btn-block" style="margin-top: 14px;">
+              <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span>Nạp vào Bộ sửa chữ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 2: BỘ SỬA CHỮ (EDIT STUDIO) -->
+        <div id="tab-content-edit" class="tab-pane" role="tabpanel">
+          <!-- ACTION SELECTOR -->
+          <div class="panel-section">
+            <div class="segmented-control" role="radiogroup" aria-label="Kiểu thao tác">
+              <button class="segment-btn active" id="mode-replace" data-mode="replace" role="radio" aria-checked="true">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <span>Thay thế (Replace)</span>
+              </button>
+              <button class="segment-btn" id="mode-insert" data-mode="insert" role="radio" aria-checked="false">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Chèn mới (Insert)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- INPUT FORM -->
+          <div class="panel-section">
+            <div class="form-group">
+              <label for="input-new-text" class="form-label">
+                <span>Nội dung mới cần ghi:</span>
+                <span class="label-hint">(để trống = xóa trắng)</span>
+              </label>
+              <input type="text" id="input-new-text" class="form-input" placeholder="Nhập số tiền, số lượng, ngày tháng..." autocomplete="off">
+            </div>
+
+            <!-- FONT & SIZE -->
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="select-font" class="form-label">Phông chữ (Font):</label>
+                <select id="select-font" class="form-select">
+                  <option value="auto">auto (Tự nhận diện Đậm/Thường)</option>
+                  <option value="times.ttf">Times New Roman Regular</option>
+                  <option value="timesbd.ttf">Times New Roman Bold (Đậm)</option>
+                  <option value="timesi.ttf">Times New Roman Italic (Nghiêng)</option>
+                  <option value="timesbi.ttf">Times New Roman Bold Italic</option>
+                  <option value="arial.ttf">Arial Regular</option>
+                  <option value="arialbd.ttf">Arial Bold (Đậm)</option>
+                  <option value="ariali.ttf">Arial Italic (Nghiêng)</option>
+                  <option value="calibri.ttf">Calibri Regular</option>
+                  <option value="calibrib.ttf">Calibri Bold (Đậm)</option>
+                  <option value="tahoma.ttf">Tahoma Regular</option>
+                  <option value="cour.ttf">Courier New (Máy đánh chữ)</option>
+                  <option value="GOTHIC.TTF">Century Gothic Regular</option>
+                </select>
+              </div>
+
+              <div class="form-group flex-1">
+                <label for="input-font-size" class="form-label">Cỡ (pt):</label>
+                <div class="input-stepper">
+                  <input type="number" id="input-font-size" class="form-input font-mono" min="10" max="150" value="52">
+                </div>
+              </div>
+            </div>
+
+            <!-- ALIGNMENT -->
+            <div class="form-group">
+              <label class="form-label">Căn lề văn bản (Alignment):</label>
+              <div class="align-btn-group" role="radiogroup">
+                <button class="align-btn active" data-align="auto" title="Tự động (số căn phải, chữ căn giữa)">auto</button>
+                <button class="align-btn" data-align="left" title="Căn lề trái">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="17" y1="10" x2="3" y2="10"></line>
+                    <line x1="21" y1="6" x2="3" y2="6"></line>
+                    <line x1="21" y1="14" x2="3" y2="14"></line>
+                    <line x1="17" y1="18" x2="3" y2="18"></line>
+                  </svg>
+                </button>
+                <button class="align-btn" data-align="center" title="Căn lề giữa">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="18" y1="10" x2="6" y2="10"></line>
+                    <line x1="21" y1="6" x2="3" y2="6"></line>
+                    <line x1="21" y1="14" x2="3" y2="14"></line>
+                    <line x1="18" y1="18" x2="6" y2="18"></line>
+                  </svg>
+                </button>
+                <button class="align-btn" data-align="right" title="Căn lề phải (số liệu)">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="21" y1="10" x2="7" y2="10"></line>
+                    <line x1="21" y1="6" x2="3" y2="6"></line>
+                    <line x1="21" y1="14" x2="3" y2="14"></line>
+                    <line x1="21" y1="18" x2="7" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- ROUGHNESS SLIDER -->
+            <div class="form-group roughness-box">
+              <div class="roughness-header">
+                <label for="slider-roughness" class="form-label">
+                  <span>Mức độ rỗ scan (Roughness):</span>
+                </label>
+                <span id="roughness-val-display" class="font-mono text-cyan font-bold">1.0 (Chuẩn scan)</span>
+              </div>
+              
+              <input type="range" id="slider-roughness" min="0.0" max="2.0" step="0.1" value="1.0" class="range-slider">
+
+              <div class="preset-chips">
+                <button type="button" class="chip-btn" data-r="0.0">Tắt (0.0)</button>
+                <button type="button" class="chip-btn" data-r="0.6">Mịn nhẹ (0.6)</button>
+                <button type="button" class="chip-btn active" data-r="1.0">Chuẩn (1.0)</button>
+                <button type="button" class="chip-btn" data-r="1.4">Rỗ đậm (1.4)</button>
+              </div>
+              <p class="field-hint">Tạo hạt mực đa tầng, rỗ thớ giấy và vi lỗ mực để chữ tự nhiên 100% như scan gốc.</p>
+            </div>
+
+            <!-- COLORS -->
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label class="form-label">Màu mực:</label>
+                <div class="color-input-wrap">
+                  <input type="color" id="picker-ink" value="#373432">
+                  <input type="text" id="hex-ink" class="form-input font-mono input-sm" value="#373432">
+                </div>
+              </div>
+              <div class="form-group flex-1" id="group-bg-color">
+                <label class="form-label">Màu giấy nền:</label>
+                <div class="color-input-wrap">
+                  <input type="color" id="picker-bg" value="#FEFEFE">
+                  <input type="text" id="hex-bg" class="form-input font-mono input-sm" value="#FEFEFE">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BEFORE / AFTER INTERACTIVE COMPARISON -->
+          <div class="panel-section">
+            <div class="section-title-wrap">
+              <h3 class="section-title">SO SÁNH TRƯỚC / SAU (BEFORE & AFTER)</h3>
+              <button id="btn-refresh-preview" class="btn btn-ghost btn-xs">
+                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span>Xem thử</span>
+              </button>
+            </div>
+
+            <div class="split-slider-wrap" id="split-slider-wrap">
+              <div class="split-layer-before" id="split-layer-before">
+                <img id="img-compare-before" alt="Trước khi sửa" src="">
+                <span class="split-tag tag-before">TRƯỚC (GỐC)</span>
+              </div>
+              <div class="split-layer-after" id="split-layer-after">
+                <img id="img-compare-after" alt="Sau khi sửa" src="">
+                <span class="split-tag tag-after">SAU (MỚI)</span>
+              </div>
+              <div class="split-handle" id="split-handle">
+                <div class="split-handle-line"></div>
+                <div class="split-handle-button">
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="panel-section actions-footer">
+            <button id="btn-add-to-queue" class="btn btn-primary btn-block">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              <span>Thêm vào hàng đợi sửa</span>
+            </button>
+            <button id="btn-cancel-edit-mode" class="btn btn-secondary btn-block hidden" style="margin-top: 8px;">
+              <span>Hủy sửa (Chuyển về thêm mới)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TAB 3: HÀNG ĐỢI SỬA HÀNG LOẠT (BATCH QUEUE) -->
+        <div id="tab-content-queue" class="tab-pane" role="tabpanel">
+          <div class="panel-section">
+            <div class="section-title-wrap">
+              <h3 class="section-title">DANH SÁCH SỬA ĐỔI</h3>
+              <div class="queue-actions-top">
+                <button id="btn-export-recipe" class="btn btn-ghost btn-xs" title="Lưu cấu hình sửa thành file JSON">
+                  <span>Lưu JSON</span>
+                </button>
+                <button id="btn-import-recipe-trigger" class="btn btn-ghost btn-xs" title="Tải cấu hình sửa từ file JSON">
+                  <span>Nạp JSON</span>
+                </button>
+                <input type="file" id="recipe-uploader" accept=".json" style="display: none;">
+                <button id="btn-clear-queue" class="btn btn-ghost btn-xs text-danger" title="Xóa toàn bộ hàng đợi">
+                  <span>Xóa hết</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="queue-list" class="queue-items-container">
+              <!-- Queue items rendered dynamically -->
+              <div class="empty-queue-msg">
+                <p>Chưa có mục nào trong hàng đợi.</p>
+                <p class="text-muted">Chọn vùng trên trang PDF, bóc tách và nhấn "Thêm vào hàng đợi sửa" để tích lũy nhiều vị trí.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- BATCH PROCESS CTA -->
+          <div class="panel-section queue-footer">
+            <div class="form-group">
+              <label for="input-output-name" class="form-label">Tên file PDF xuất ra:</label>
+              <input type="text" id="input-output-name" class="form-input font-mono" placeholder="CCF_000372_DaSua.pdf">
+            </div>
+
+            <!-- TÙY CHỌN LƯU FILE -->
+            <div class="queue-save-options">
+              <label class="checkbox-label" title="Lưu file PDF đã sửa trực tiếp vào cùng thư mục với file PDF gốc">
+                <input type="checkbox" id="chk-save-same-dir" checked>
+                <span>Lưu cùng chỗ với file gốc</span>
+              </label>
+              <label class="checkbox-label" title="Tải thêm 1 bản copy về máy qua trình duyệt (thư mục Downloads)">
+                <input type="checkbox" id="chk-download-browser" checked>
+                <span>Tải về qua trình duyệt</span>
+              </label>
+            </div>
+
+            <button id="btn-run-batch" class="btn btn-success btn-block btn-lg">
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              <span>Chạy cập nhật & Tải PDF</span>
+            </button>
+
+            <!-- HỘP THÔNG BÁO LƯU THÀNH CÔNG VÀ NÚT MỞ THƯ MỤC -->
+            <div id="save-success-box" class="save-success-box hidden">
+              <div class="save-path-text">
+                <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                  <svg viewBox="0 0 24 24" width="15" height="15" stroke="#10B981" stroke-width="2" fill="none">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                  </svg>
+                  <span style="font-weight:600; color:#10B981;">Đã lưu file thành công:</span>
+                </div>
+                <div id="saved-file-path" class="font-mono saved-path-val">--</div>
+              </div>
+              <button id="btn-open-saved-folder" class="btn btn-sm btn-secondary btn-block" title="Mở thư mục chứa file trong Windows Explorer">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Mở thư mục chứa file</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- BOTTOM STATUS BAR -->
+    <footer class="bottom-bar" role="contentinfo">
+      <div class="bar-left">
+        <span class="status-indicator"></span>
+        <span id="status-message" class="status-text">Sẵn sàng</span>
+      </div>
+      <div class="bar-right">
+        <span class="status-chip font-mono" id="chip-cursor">X: 0, Y: 0</span>
+        <span class="status-chip font-mono" id="chip-selection">Box: --</span>
+        <span class="status-chip font-mono" id="chip-zoom">Scale: 100%</span>
+      </div>
+    </footer>
+
+    <!-- KEYBOARD SHORTCUTS MODAL -->
+    <div id="shortcuts-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Bảng Phím Tắt Tiện Dụng</h3>
+          <button id="btn-close-modal" class="icon-btn">
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="shortcut-row"><kbd>V</kbd><span>Công cụ Chọn vùng (Selection Tool)</span></div>
+          <div class="shortcut-row"><kbd>H</kbd> / <kbd>Space + Kéo chuột</kbd><span>Di chuyển trang (Pan View)</span></div>
+          <div class="shortcut-row"><kbd>M</kbd><span>Bật/tắt Kính lúp phóng đại hạt mực</span></div>
+          <div class="shortcut-row"><kbd>Cuộn chuột</kbd><span>Phóng to / Thu nhỏ tại vị trí con trỏ</span></div>
+          <div class="shortcut-row"><kbd>Ctrl + 0</kbd><span>Vừa khít khung nhìn</span></div>
+          <div class="shortcut-row"><kbd>Ctrl + 1</kbd><span>Kích thước pixel gốc (100%)</span></div>
+          <div class="shortcut-row"><kbd>Esc</kbd><span>Hủy chọn vùng hiện tại</span></div>
+          <div class="shortcut-row"><kbd>Enter</kbd><span>Bóc tách ngay thuộc tính vùng vừa chọn</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  </div>
+
+  <script src="/static/app.js?v=1.0.1"></script>
+</body>
+</html>

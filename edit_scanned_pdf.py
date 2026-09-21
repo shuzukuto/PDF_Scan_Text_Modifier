@@ -535,8 +535,9 @@ class ScannedPdfEditor:
         font_2x = ImageFont.truetype(font_path, f_size_2x)
         font_1x = ImageFont.truetype(font_path, font_size)
 
-        bbox_2x = font_2x.getbbox(text)
-        left_2x, top_2x, right_2x, bottom_2x = bbox_2x
+        # Sử dụng anchor="ls" (Left Baseline) để xác định chính xác tuyệt đối đường chân chữ
+        bbox_ls_2x = font_2x.getbbox(text, anchor="ls")
+        left_2x, top_2x, right_2x, bottom_2x = bbox_ls_2x
         actual_text_w_1x = (right_2x - left_2x) // scale
         actual_text_h_1x = (bottom_2x - top_2x) // scale
 
@@ -547,8 +548,9 @@ class ScannedPdfEditor:
         mask_im = Image.new("L", (w_2x, h_2x), 0)
         draw = ImageDraw.Draw(mask_im)
         draw_x = pad_2x - left_2x
-        draw_y = pad_2x - top_2x
-        draw.text((draw_x, draw_y), text, fill=255, font=font_2x)
+        # Đường chân chữ Baseline (đáy của các số và chữ in) nằm chính xác tại baseline_in_mask_2x
+        baseline_in_mask_2x = pad_2x - top_2x
+        draw.text((draw_x, baseline_in_mask_2x), text, fill=255, font=font_2x, anchor="ls")
 
         mask_2x = np.array(mask_im, dtype=np.float32) / 255.0
 
@@ -578,6 +580,7 @@ class ScannedPdfEditor:
         w_1x = w_2x // scale
         h_1x = h_2x // scale
         mask_1x = cv2.resize(jittered_2x, (w_1x, h_1x), interpolation=cv2.INTER_AREA)
+        baseline_in_mask_1x = baseline_in_mask_2x // scale
 
         # 2. Độ sâu lõi nét chữ (Centerline Core Darkening)
         stroke_binary = (mask_1x > 0.35).astype(np.uint8)
@@ -614,9 +617,6 @@ class ScannedPdfEditor:
             pores = np.zeros((h_1x, w_1x), dtype=np.float32)
 
         # Tính tọa độ dán (paste_x, paste_y)
-        bbox_zero_1x = font_1x.getbbox("0")
-        baseline_offset = bbox_zero_1x[3]
-
         if align == "right":
             paste_x = target_x - actual_text_w_1x - pad_2x // scale
         elif align == "center":
@@ -624,7 +624,8 @@ class ScannedPdfEditor:
         else:  # left
             paste_x = target_x - pad_2x // scale
 
-        paste_y = baseline_y - baseline_offset - pad_2x // scale
+        # Canh đường chân chữ Baseline (đáy của các số và chữ in) nằm CHÍNH XÁC tại baseline_y
+        paste_y = baseline_y - baseline_in_mask_1x
 
         # Hòa trộn lên canvas self.image
         canvas_np = np.array(self.image)

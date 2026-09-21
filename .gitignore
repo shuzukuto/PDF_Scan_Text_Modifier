@@ -23,3 +23,9 @@ Desktop.ini
 # Editor directories
 .vscode/
 .idea/
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
+

@@ -7,6 +7,10 @@ Bộ công cụ chuyên biệt để chỉnh sửa tài liệu dạng **ảnh sc
 ---
 
 ## MỤC LỤC
+0. [🌟 Giao Diện Web Studio Trực Quan (Chạy 1-chạm `run_scaned_pdf_modifier.bat`)](#0-giao-diện-web-studio-trực-quan-chạy-1-chạm-run_scaned_pdf_modifierbat)
+   - [Cách 1: Khởi chạy 1-chạm Tất Cả Trong Một (`run_scaned_pdf_modifier.bat`)](#cách-1-khởi-chạy-1-chạm-tất-cả-trong-một-run_scaned_pdf_modifierbat)
+   - [Cách 2: Tự động cài đặt 1-click cho máy mới tinh (`cai_dat_tu_dong.bat`)](#cách-2-tự-động-cài-đặt-1-click-cho-máy-mới-tinh-cai_dat_tu_dongbat)
+   - [Các tính năng vượt trội của Giao diện Studio](#các-tính-năng-vượt-trội-của-giao-diện-studio)
 1. [Hướng Dẫn Cài Đặt Dành Cho Người Mới (Không Cần Biết Lập Trình)](#1-hướng-dẫn-cài-đặt-dành-cho-người-mới-không-cần-biết-lập-trình)
    - [Bước 1: Cài đặt Python trên máy tính Windows](#bước-1-cài-đặt-python-trên-máy-tính-windows-nếu-chưa-có)
    - [Bước 2: Mở cửa sổ dòng lệnh tại thư mục làm việc](#bước-2-mở-cửa-sổ-dòng-lệnh-ngay-tại-thư-mục-chứa-file)
@@ -38,6 +42,46 @@ Bộ công cụ chuyên biệt để chỉnh sửa tài liệu dạng **ảnh sc
    - [Ví dụ 10: Chạy script Python tự động sửa hàng loạt nhiều ô](#ví-dụ-10-chạy-script-python-tự-động-sửa-hàng-loạt-nhiều-ô)
 7. [Bảng Tra Cứu Font Chữ Windows Tương Thích](#7-bảng-tra-cứu-font-chữ-windows-tương-thích)
 8. [Bí Quyết Giúp Chữ Mới Tự Nhiên Tuyệt Đối](#8-bí-quyết-giúp-chữ-mới-tự-nhiên-tuyệt-đối)
+
+---
+
+## 0. Giao Diện Web Studio Trực Quan (Chạy 1-Chạm `run_scaned_pdf_modifier.bat`)
+
+Dành cho người dùng muốn chỉnh sửa trực quan trên màn hình kéo thả chuột thay vì gõ lệnh trong cửa sổ console:
+
+```text
+       ┌─────────────────────────────────────────────────────────────┐
+       │     PDF SCAN TEXT MODIFIER STUDIO — GIAO DIỆN CHUYÊN NGHIỆP  │
+       ├─────────────────┬───────────────────────────┬───────────────┤
+       │ 📄 Danh sách    │ 🖼️ Canvas Tương Tác       │ ⚙️ Bóc Tách   │
+       │    các trang    │   • Kéo chuột chọn vùng   │   & Bộ Sửa    │
+       │    Thumbnail    │   • Kính lúp phóng đại 3x │   • Roughness │
+       │    1, 2, 3...   │   • Tọa độ HUD & Baseline │   • Before /  │
+       │                 │   • Pan & Zoom 10% - 600% │     After     │
+       └─────────────────┴───────────────────────────┴───────────────┘
+```
+
+### Cách 1: Khởi chạy 1-chạm Tất Cả Trong Một (`run_scaned_pdf_modifier.bat`)
+- Nhấp đúp chuột vào file duy nhất **`run_scaned_pdf_modifier.bat`** ngay trong thư mục dự án.
+- File này được tích hợp thông minh **Run & Use (Chạy là Dùng Ngay)**:
+  1. **Tự động cấu hình tên miền riêng**: Thiết lập tên miền riêng **`http://pdfscanmodifier:8000/`** vào hệ thống (không lo trùng cổng hay trùng URL với bất kỳ phần mềm nào khác).
+  2. **Ưu tiên chạy bản độc lập không cần Python**: Tự động phát hiện và khởi động ngay file EXE đóng gói độc lập (`dist\PDF_Scan_Modifier\PDF_Scan_Modifier.exe`).
+  3. **Tự động chuyển tiếp Python**: Nếu chạy từ source code, file sẽ tự động gọi môi trường Python có sẵn trên máy để bật ứng dụng.
+  4. Tự động bật máy chủ và mở trình duyệt web lên màn hình chỉ trong 1 giây!
+
+### Cách 2: Tự động cài đặt 1-click cho máy mới tinh (`cai_dat_tu_dong.bat`)
+- Dành cho trường hợp gửi mã nguồn cho người khác trên máy tính mới chưa có Python:
+  - Chỉ cần nhấp đúp vào file **`cai_dat_tu_dong.bat`**, máy tính sẽ tự động tải Python chính thức, tự cài ngầm, tự tải toàn bộ thư viện và mở ứng dụng cho bạn từ A đến Z!
+
+### Các tính năng vượt trội của Giao diện Studio:
+- 🖱️ **Kéo quét chọn vùng trực quan (Interactive ROI):** Dùng chuột kéo chọn bất kỳ vùng chữ nào trên trang scan, có 8 điểm nắn chỉnh kích thước (handles) và hiển thị tọa độ pixel gốc ngay lập tức.
+- 🔬 **Kính lúp kiểm tra hạt mực (Magnifier Loupe):** Nhấn phím `M` để bật kính lúp 3x soi rõ từng chấm rỗ thớ giấy và viền nét chữ scan gốc.
+- ⚡ **Bóc tách 1 chạm (Smart Inspector):** Tự động phát hiện cỡ font (pt), kiểu dáng (Đậm/Nghiêng/Đứng), độ dày nét (stroke), mật độ mực (%), màu mực in, màu nền giấy và **đường chân chữ Baseline Y**.
+- 🎚️ **Thanh trượt độ rỗ thời gian thực (Roughness Slider):** Tùy chỉnh mức độ rỗ từ `0.0` (phẳng mịn) đến `2.0` (rỗ thô scan) với các nút chọn nhanh: *Tắt (0.0)*, *Mịn (0.6)*, *Chuẩn scan (1.0)*, *Rỗ đậm (1.4)*.
+- ↔️ **Thanh trượt so sánh Trước / Sau (Before & After Split View):** Vuốt thanh phân cách để đối chiếu trực tiếp chất lượng chữ mới so với chữ cũ trước khi xuất file.
+- 📋 **Hàng đợi sửa hàng loạt (Batch Queue):** Thêm nhiều vị trí cần sửa trên nhiều trang, bật/tắt từng mục tùy ý.
+- 💾 **Lưu & Nạp công thức JSON (Recipe):** Lưu lại toàn bộ danh sách tọa độ và nội dung sửa thành file `.json` để dùng lại cho các tài liệu tương tự.
+- 📥 **Xuất PDF chuẩn 300 DPI:** Nhấn nút "Xuất PDF", hệ thống tự động xử lý và tải file PDF hoàn chỉnh về máy tính.
 
 ---
 
