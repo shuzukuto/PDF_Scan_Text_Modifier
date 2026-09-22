@@ -115,6 +115,13 @@ def main():
     print(" • Nhấn Ctrl + C để dừng máy chủ bất cứ lúc nào.")
     print("=" * 76 + "\n")
 
+    # Gửi sự kiện thống kê ẩn danh mở ứng dụng
+    try:
+        from telemetry import track_event
+        track_event("app_start", {"port": port, "custom_domain": has_domain})
+    except Exception:
+        pass
+
     # Mở trình duyệt ở luồng phụ
     if not args.no_browser:
         threading.Thread(target=open_browser, args=(access_url,), daemon=True).start()

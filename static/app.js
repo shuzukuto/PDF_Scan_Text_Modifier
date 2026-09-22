@@ -175,6 +175,7 @@
     
     // Status Bar & Toasts
     statusMessage: document.getElementById('status-message'),
+    chipTelemetry: document.getElementById('chip-telemetry'),
     chipCursor: document.getElementById('chip-cursor'),
     chipSelection: document.getElementById('chip-selection'),
     chipZoom: document.getElementById('chip-zoom'),
@@ -192,7 +193,41 @@
     bindEvents();
     setupSplitSlider();
     await loadDocumentsList();
+    initTelemetry();
     showToast('Chào mừng bạn đến với PDF Scan Text Modifier Studio!', 'info');
+  }
+
+  async function initTelemetry() {
+    if (!dom.chipTelemetry) return;
+    try {
+      const res = await fetch('/api/telemetry/status');
+      if (res.ok) {
+        const data = await res.json();
+        updateTelemetryChip(data.enabled);
+      }
+    } catch (e) {}
+
+    dom.chipTelemetry.addEventListener('click', async () => {
+      const isCurrentlyEnabled = dom.chipTelemetry.textContent.includes('Bật');
+      const newStatus = !isCurrentlyEnabled;
+      try {
+        const res = await fetch('/api/telemetry/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: newStatus })
+        });
+        if (res.ok) {
+          updateTelemetryChip(newStatus);
+          showToast(newStatus ? 'Đã bật thống kê ẩn danh GA4' : 'Đã tắt thống kê ẩn danh (Opt-out)', 'info');
+        }
+      } catch (e) {}
+    });
+  }
+
+  function updateTelemetryChip(enabled) {
+    if (!dom.chipTelemetry) return;
+    dom.chipTelemetry.textContent = enabled ? '📊 GA4: Bật' : '📊 GA4: Tắt';
+    dom.chipTelemetry.style.color = enabled ? '#10B981' : '#94A3B8';
   }
 
   // ========================================================================

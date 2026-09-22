@@ -10,6 +10,7 @@ Bộ công cụ chuyên biệt để chỉnh sửa tài liệu dạng **ảnh sc
 0. [🌟 Giao Diện Web Studio Trực Quan (Chạy 1-chạm `run_scaned_pdf_modifier.bat`)](#0-giao-diện-web-studio-trực-quan-chạy-1-chạm-run_scaned_pdf_modifierbat)
    - [Cách 1: Khởi chạy 1-chạm Tất Cả Trong Một (`run_scaned_pdf_modifier.bat`)](#cách-1-khởi-chạy-1-chạm-tất-cả-trong-một-run_scaned_pdf_modifierbat)
    - [Cách 2: Tự động cài đặt 1-click cho máy mới tinh (`cai_dat_tu_dong.bat`)](#cách-2-tự-động-cài-đặt-1-click-cho-máy-mới-tinh-cai_dat_tu_dongbat)
+   - [Cách 3: Tự động đóng gói thành bản EXE độc lập để chia sẻ (`dong_goi_exe.bat`)](#cách-3-tự-động-đóng-gói-thành-bản-exe-độc-lập-để-chia-sẻ-dong_goi_exebat)
    - [Các tính năng vượt trội của Giao diện Studio](#các-tính-năng-vượt-trội-của-giao-diện-studio)
 1. [Hướng Dẫn Cài Đặt Dành Cho Người Mới (Không Cần Biết Lập Trình)](#1-hướng-dẫn-cài-đặt-dành-cho-người-mới-không-cần-biết-lập-trình)
    - [Bước 1: Cài đặt Python trên máy tính Windows](#bước-1-cài-đặt-python-trên-máy-tính-windows-nếu-chưa-có)
@@ -72,6 +73,15 @@ Dành cho người dùng muốn chỉnh sửa trực quan trên màn hình kéo 
 ### Cách 2: Tự động cài đặt 1-click cho máy mới tinh (`cai_dat_tu_dong.bat`)
 - Dành cho trường hợp gửi mã nguồn cho người khác trên máy tính mới chưa có Python:
   - Chỉ cần nhấp đúp vào file **`cai_dat_tu_dong.bat`**, máy tính sẽ tự động tải Python chính thức, tự cài ngầm, tự tải toàn bộ thư viện và mở ứng dụng cho bạn từ A đến Z!
+
+### Cách 3: Tự động đóng gói thành bản EXE độc lập để chia sẻ (`dong_goi_exe.bat`)
+- Dành cho người muốn đóng gói ứng dụng thành file chạy độc lập nằm trong thư mục `dist\PDF_Scan_Modifier` để gửi cho người khác dùng ngay (không cần cài Python):
+  1. Nhấp đúp chuột vào file **`dong_goi_exe.bat`** ngay trong thư mục dự án.
+  2. Script sẽ tự động:
+     - Tự cài `pyinstaller` nếu máy chưa có.
+     - Đóng gói sạch toàn bộ mã nguồn và đồng bộ tài nguyên giao diện `static/`.
+     - Tự động mở sẵn thư mục `dist\` trong Windows Explorer khi hoàn tất.
+  3. **Cách chia sẻ cho người khác:** Click chuột phải vào thư mục `dist\PDF_Scan_Modifier` -> Chọn **Compress to ZIP file** (Nén thành `.zip`). Gửi file `.zip` này qua Zalo/Drive/USB. Người nhận chỉ cần giải nén và bấm đúp vào **`PDF_Scan_Modifier.exe`** là dùng được ngay lập tức!
 
 ### Các tính năng vượt trội của Giao diện Studio:
 - 🖱️ **Kéo quét chọn vùng trực quan (Interactive ROI):** Dùng chuột kéo chọn bất kỳ vùng chữ nào trên trang scan, có 8 điểm nắn chỉnh kích thước (handles) và hiển thị tọa độ pixel gốc ngay lập tức.
@@ -711,3 +721,20 @@ Script tự động tìm font trong thư mục hệ thống `C:\Windows\Fonts`. 
    - Trong bảng tính kế toán, số liệu luôn được gióng thẳng theo hàng đơn vị ở bên phải. Căn lề phải đảm bảo số tiền mới thẳng hàng tuyệt đối với các số ở các dòng khác.
 3. **Độ hòa sắc và hạt nhiễu:**
    - Script tự động tính toán bán kính làm mờ tán sắc (Blur radius ~0.45px) mô phỏng lại hiện tượng quang học của đầu quét máy scan, giúp mép chữ không bị sắc lẹm giả tạo mà hòa cùng độ phân giải giấy scan gốc.
+
+---
+
+## 9. Thống Kê Ẩn Danh & Quyền Riêng Tư (Anonymous Telemetry)
+
+Ứng dụng tuân thủ tiêu chuẩn phần mềm mã nguồn mở **MIT License**:
+- **100% ẨN DANH:** Tuyệt đối **không** thu thập nội dung file PDF, tên tài liệu, văn bản sửa đổi hay thông tin cá nhân của bạn.
+- **Mục đích:** Chỉ ghi nhận các chỉ số kỹ thuật cơ bản (sự kiện mở ứng dụng, số lượng lần xuất file) qua **Google Analytics 4** để tác giả theo dõi số người dùng hoạt động (DAU/WAU/MAU) và tối ưu hóa tính năng.
+- **Quyền kiểm soát của bạn (Opt-out):**
+  - Trong giao diện Web Studio: Nhấp vào nút **`📊 GA4: Bật`** ở góc dưới bên phải thanh trạng thái để chuyển sang chế độ **`Tắt`** bất cứ lúc nào.
+  - Hoặc đặt biến môi trường hệ thống: `set PDF_SCAN_TELEMETRY_OPT_OUT=1`.
+
+---
+
+## 10. Giấy Phép (License)
+
+Dự án được phát hành miễn phí theo giấy phép [MIT License](LICENSE). Bạn được toàn quyền sử dụng, sửa đổi và chia sẻ cho cộng đồng.

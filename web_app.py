@@ -279,6 +279,12 @@ def analyze_roi(req: AnalyzeRequest):
         crop_im = editor.image.crop(crop_box)
         crop_b64 = image_to_base64_jpeg(crop_im, quality=95)
         
+        try:
+            from telemetry import track_event
+            track_event("analyze_roi")
+        except Exception:
+            pass
+        
         return {
             "success": True,
             "x": x,
@@ -445,6 +451,15 @@ def apply_batch_edits(req: BatchApplyRequest):
             # Lưu lại trang vào file PDF đích
             editor.save(str(output_path))
             
+        try:
+            from telemetry import track_event
+            track_event("export_pdf", {
+                "applied_count": applied_count,
+                "save_to_source": req.save_to_source_dir
+            })
+        except Exception:
+            pass
+
         return {
             "success": True,
             "applied_count": applied_count,
@@ -548,6 +563,34 @@ def get_system_fonts():
         {"id": "GOTHICB.TTF", "family": "Century Gothic", "style": "Bold (Đậm)", "rec": False}
     ]
     return {"fonts": curated_fonts}
+
+
+class TelemetryToggleRequest(BaseModel):
+    enabled: bool
+
+
+@app.get("/api/telemetry/status")
+def get_telemetry_status():
+    """Lấy thông tin trạng thái thống kê ẩn danh."""
+    try:
+        from telemetry import is_telemetry_enabled, get_anonymous_client_id
+        return {
+            "enabled": is_telemetry_enabled(),
+            "client_id": get_anonymous_client_id()
+        }
+    except Exception as e:
+        return {"enabled": True, "client_id": "unknown"}
+
+
+@app.post("/api/telemetry/toggle")
+def toggle_telemetry(req: TelemetryToggleRequest):
+    """Bật/tắt gửi số liệu thống kê ẩn danh theo lựa chọn của người dùng."""
+    try:
+        from telemetry import set_telemetry_enabled, is_telemetry_enabled
+        set_telemetry_enabled(req.enabled)
+        return {"success": True, "enabled": is_telemetry_enabled()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Phục vụ các file tĩnh UI
